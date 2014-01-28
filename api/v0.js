@@ -1,5 +1,6 @@
 
 resp = require('../response').resp;
+message = require('../messaging');
 
 // POST /event
 // crtr = creator id, msg = event message
@@ -13,6 +14,7 @@ exports.post_event = function(req, res) {
     creator: q.crtr,
     message: q.msg
   };
+  message.send_message(q.crtr, q.msg);
   resp.success(res, out);
 }
 
