@@ -1,11 +1,12 @@
 {
-    "name": "happ"
-  , "version": "1.0.0"
-  , "private": true
-  , "dependencies": {
-      "express": "3.4.8"
-    , "mysql": "2.0.x"
-    , "twilio": "1.5.0"
+  "name": "happ",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "express": "3.4.8",
+    "mongojs": "0.10.0",
+    "twilio": "1.5.0",
+    "sequelize": "~1.7.0-rc3"
   },
   "engines": {
     "node": "0.10.x"
