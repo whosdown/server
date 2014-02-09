@@ -5,22 +5,27 @@
 
   // POST /event
   // crtr = creator id, msg = event message
-  var create_event = function(req, res) {
-    var q = req.query;
-    if (!q.crtr || !q.msg) {
-      resp.error(res, resp.BAD);
-      return;
+  var createEvent = function(req, res) {
+    var failure = function (err) {
+      resp.error(res, resp.CONFLICT, err);
     }
-    var out = {
-      creator: q.crtr,
-      message: q.msg
-    };
-    message.send_message(q.crtr, q.msg);
-    resp.success(res, out);
+
+    var success = function (out) {
+      resp.success(res, out);
+    }
+    console.log(req.body.recips)
+
+
+    database.createEvent({
+      userId: undefined,
+      message: req.body.message,
+      title: undefined,
+      recips: req.body.recips
+    }, success, failure);
   }
 
   // GET /event
-  var get_events = function(req, res) {
+  var getEvents = function(req, res) {
     var q = req.query;
     if (!q.crtr || !q.evid) {
       resp.error(res, resp.BAD);
@@ -45,11 +50,16 @@
         user[phone]=1234567890
    *
    */
-  var post_user = function (req, res) {
-    var out = req.body.user;
+  var postUser = function (req, res) {
+    var failure = function (err) {
+      resp.error(res, resp.CONFLICT, err);
+    }
 
+    var success = function (out) {
+      resp.success(res, out);
+    }
 
-    resp.success(res, out);
+    database.createUser(req.body.user, success, failure);
   }
 
   var get_user = function (req, res) {
@@ -59,13 +69,13 @@
   module.exports = {
     events: {
       path: '/api/v0/event', 
-      create: create_event,
-      get_all: get_events,
+      create: createEvent,
+      getAll: getEvents,
       get_recipients: get_event_recipients
     },
     user: {
       path: '/api/v0/user',
-      post: post_user,
+      post: postUser,
       get:  get_user
     }
   };

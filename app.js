@@ -17,7 +17,7 @@ app.get('/', routes.index);
 
 // API
 app.post(api_v0.events.path, api_v0.events.create);
-app.get(api_v0.events.path,  api_v0.events.get_all);
+app.get(api_v0.events.path,  api_v0.events.getAll);
 
 app.post(api_v0.user.path, api_v0.user.post);
 app.get(api_v0.user.path,  api_v0.user.get);

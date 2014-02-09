@@ -1,18 +1,27 @@
-var t_keys = require('./private/logins').twilio
-var client = require('twilio')(t_keys.account_id, t_keys.auth_token);
+(function () {
 
-exports.send_message = function(recip, msg) {
-  var message_info = {
-    to: recip,
-    from: "+13475805352",
-    body: msg
-  };
+  var t_keys = require('./private/logins').twilio
+  var client = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
-  client.messages.create(message_info, function(err, message) {
-    if (message) {
-      console.log(message.sid);
-    } else {
-      console.log('message creation failed - ' + err);
-    }
-  });
-}
+  // exports.send_message = function(recip, msg) {
+  //   var message_info = {
+  //     to: recip,
+  //     from: "+13475805352",
+  //     body: msg
+  //   };
+
+  //   client.messages.create(message_info, function(err, message) {
+  //     if (message) {
+  //       console.log(message.sid);
+  //     } else {
+  //       console.log('message creation failed - ' + err);
+  //     }
+  //   });
+  // }
+
+  module.exports = {
+    sendMessage: undefined,
+    
+  }
+
+})();
