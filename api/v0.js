@@ -7,17 +7,20 @@
   // crtr = creator id, msg = event message
   var createEvent = function(req, res) {
     var failure = function (err) {
-      resp.error(res, resp.CONFLICT, err);
+      if (err) {
+        resp.error(res, resp.CONFLICT, err);
+      } else {
+        resp.error(res, resp.BAD);
+      }
+      return;
     }
 
     var success = function (out) {
-      resp.success(res, out);
+      return resp.success(res, out);
     }
-    console.log(req.body.recips)
-
 
     database.createEvent({
-      userId: undefined,
+      userId: req.body.userId,
       message: req.body.message,
       title: undefined,
       recips: req.body.recips
@@ -26,16 +29,22 @@
 
   // GET /event
   var getEvents = function(req, res) {
-    var q = req.query;
-    if (!q.crtr || !q.evid) {
+    var failure = function (err) {
+      resp.error(res, resp.NOT_FOUND, err);
+    }
+
+    var success = function (out) {
+      resp.success(res, out);
+    }
+
+    console.log(req.query);
+    
+    if (!req.query.user) {
       resp.error(res, resp.BAD);
       return;
     }
-    var out = {
-      creator: q.crtr,
-      event_id: q.evid
-    };
-    resp.success(res, out);
+
+    database.getEventsForCreator(req.query.user, success, failure);
   }
 
   var get_event_recipients = function (req, res) {
