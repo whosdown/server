@@ -37,8 +37,6 @@
       resp.success(res, out);
     }
 
-    console.log(req.query);
-    
     if (!req.query.user) {
       resp.error(res, resp.BAD);
       return;
@@ -47,16 +45,15 @@
     database.getEventsForCreator(req.query.user, success, failure);
   }
 
-  var get_event_recipients = function (req, res) {
 
-  }
-
-
-  /*
+  /* 
    *
-   * @param req.body = 
-        user[name]=tobi&
-        user[phone]=1234567890
+   * @param req.body = {
+              user : {
+                name: "Joe"
+                phone: 1112223333
+              }
+            }
    *
    */
   var postUser = function (req, res) {
@@ -79,8 +76,7 @@
     events: {
       path: '/api/v0/event', 
       create: createEvent,
-      getAll: getEvents,
-      get_recipients: get_event_recipients
+      getAll: getEvents
     },
     user: {
       path: '/api/v0/user',
