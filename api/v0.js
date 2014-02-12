@@ -3,8 +3,24 @@
   ,   message  = require('../messaging')
   ,   database = require('../database');
 
-  // POST /event
-  // crtr = creator id, msg = event message
+  /*  POST /event
+   *
+   * @param req.body = {
+              userId  : "52f8359d4cace484d3000004",
+              message : "Who's Down for _____",
+              recips  :  [
+                {
+                  name: "Joe"
+                  phone: 1112223333
+                },
+                {
+                  name: "Bob"
+                  phone: 1112223333
+                }
+              ]
+            }
+   *
+   */
   var createEvent = function(req, res) {
     var failure = function (err) {
       if (err) {
@@ -46,7 +62,7 @@
   }
 
 
-  /* 
+  /* POST /user
    *
    * @param req.body = {
               user : {
