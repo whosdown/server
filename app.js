@@ -25,7 +25,7 @@ app.get(api_v0.user.path,  api_v0.user.get);
 var port = 3000
 app.listen(port, function() {
   console.log('Express server listening on port %d in %s mode at %s',
-      app.address().port,
+      port,
       app.settings.env,
       new Date());
 });

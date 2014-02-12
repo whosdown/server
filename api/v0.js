@@ -84,10 +84,6 @@
     database.createUser(req.body.user, success, failure);
   }
 
-  var get_user = function (req, res) {
-    
-  }
-
   module.exports = {
     events: {
       path: '/api/v0/event', 
@@ -97,7 +93,7 @@
     user: {
       path: '/api/v0/user',
       post: postUser,
-      get:  get_user
+      get:  getUser
     }
   };
 
