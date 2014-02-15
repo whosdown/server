@@ -19,9 +19,28 @@
   //   });
   // }
 
-  module.exports = {
-    sendMessage: undefined,
+  var sendMessage = function(message) {
     
+  }
+
+  var createMessage = function (to, body, from) {
+    return {
+      to: to,
+      body: body,
+      from: from ? from : officialNumber
+    }
+  }
+
+  var officialNumber = "+13475805352";
+
+  module.exports = {
+    /*
+     * 
+     *
+     */
+    sendMessage: undefined,
+
+    createMessage: createMessage
   }
 
 })();

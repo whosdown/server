@@ -79,9 +79,11 @@
 
     var success = function (out) {
       resp.success(res, out);
+      message.sendMessage()
     }
 
     database.createUser(req.body.user, success, failure);
+    
   }
 
   module.exports = {
@@ -92,8 +94,7 @@
     },
     user: {
       path: '/api/v0/user',
-      post: postUser,
-      get:  getUser
+      post: postUser
     }
   };
 
