@@ -79,7 +79,10 @@
 
     var success = function (out) {
       resp.success(res, out);
-      message.sendMessage()
+
+      var verifyMessage = message.createMessage(out.phone, "address with verify link");
+
+      message.sendMessage(verifyMessage);
     }
 
     database.createUser(req.body.user, success, failure);
