@@ -43,7 +43,12 @@
     }, success, failure);
   }
 
-  // GET /event
+  /* GET /event
+   *
+   * @param req.query = {
+              userId : "52f8359d4cace484d3000004"
+            }
+   */
   var getEvents = function(req, res) {
     var failure = function (err) {
       resp.error(res, resp.NOT_FOUND, err);
@@ -53,12 +58,12 @@
       resp.success(res, out);
     }
 
-    if (!req.query.user) {
+    if (!req.query.userId) {
       resp.error(res, resp.BAD);
       return;
     }
 
-    database.getEventsForCreator(req.query.user, success, failure);
+    database.getEventsForCreator(req.query.userId, success, failure);
   }
 
 
@@ -80,14 +85,48 @@
     var success = function (out) {
       resp.success(res, out);
 
-      var verifyMessage = message.createMessage(out.phone, "address with verify link");
+      var verifyUrl = "wd://verify?" + out.code;
+      var verifyMessage = message.createMessage(out.phone, verifyUrl);
 
       message.sendMessage(verifyMessage);
     }
 
-    database.createUser(req.body.user, success, failure);
+    database.updateOrCreateUser(req.body.user, success, failure);
     
   }
+
+  /* POST /verify
+   *
+   * @param req.body = {
+              userId : 1uih4ih3k5j2hkj245,
+              code   : 182371823712837128
+            }
+   *
+   */
+  var verifyUser = function (req, res) {
+    var failure = function (err) {
+      resp.error(res, resp.BAD);
+      return;
+    }
+
+    var success = function (out) {
+      if (out && out.isVerified) {
+        resp.success(res, out);
+      } else {
+        resp.error(res, resp.INTERNAL);
+      }
+    }
+
+    console.log("Verifying... \nid:" + req.body.userId + "\n code: " + req.body.code);
+
+    database.verifyUser(req.body.userId, req.body.code, success, failure);
+  }
+
+  // database.verifyUser('533880df7de014ee20f42b01', 9438007790, function (docs) {
+  //   console.log(docs);
+  // }, function (docs) {
+  //   console.log(docs);
+  // });
 
   module.exports = {
     events: {
@@ -97,7 +136,9 @@
     },
     user: {
       path: '/api/v0/user',
-      post: postUser
+      post: postUser,
+      verifyPath: '/api/v0/verify',
+      verify: verifyUser
     }
   };
 

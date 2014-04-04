@@ -20,8 +20,10 @@
   // }
 
   var sendMessage = function(message) {
-    
+    console.log(message);
   }
+
+  var officialNumber = "+13475805352";
 
   var createMessage = function (to, body, from) {
     return {
@@ -31,14 +33,12 @@
     }
   }
 
-  var officialNumber = "+13475805352";
-
   module.exports = {
     /*
      * 
      *
      */
-    sendMessage: undefined,
+    sendMessage: sendMessage,
 
     createMessage: createMessage
   }
