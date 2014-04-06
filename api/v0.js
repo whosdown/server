@@ -1,8 +1,23 @@
 (function () {
-  var resp     = require('../response').resp
-  ,   message  = require('../messaging')
-  ,   database = require('../database');
+  var resp        = require('../response').resp
+  ,   message     = require('../messaging')
+  ,   database    = require('../database')
+  ,   interpreter = require('../interpreter')
+  ,   _           = require('underscore');
 
+  // database.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
+  //   _.map(out, function (event) {
+  //     interpreter.getTitleForMessage(event.message, function (title) {
+  //       database.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
+  //         console.log('Set title to: ' + title + ' for event: ' + event.message);
+  //       }, function (err) {
+  //         console.log('failed to commit title');
+  //       })
+  //     })
+  //   })
+  // }, function (err) {
+  //   console.log(err);
+  // })
   /*  POST /event
    *
    * @param req.body = {
@@ -32,7 +47,15 @@
     }
 
     var success = function (out) {
-      return resp.success(res, out);
+      resp.success(res, out);
+
+      interpreter.getTitleForMessage(req.body.message, function (title) {
+        database.setTitleForEvent(out.eventId, title, function (out) {
+          console.log('Set title to: ' + title + ' for event: ' + req.body.message);
+        }, function (err) {
+          console.log('failed to commit title');
+        })
+      })
     }
 
     database.createEvent({

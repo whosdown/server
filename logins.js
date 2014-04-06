@@ -11,7 +11,8 @@
       auth_token: logins.TWILIO_AUTH_TOKEN
     },
     maluuba : {
-      apiKey : logins.MALUUBA_API_KEY
+      url    : 'http://napi.maluuba.com/v0/interpret',
+      apikey : logins.MALUUBA_API_KEY
     }
   }
 })();

@@ -2,6 +2,7 @@
   var mongojs   = require('mongojs')
   ,   mongoKeys = require('./logins').mongo
   ,   _         = require('underscore');
+  _.str         = require('underscore.string');
 
   var consts = {
     duplicate: 11000
@@ -96,6 +97,19 @@
     }
   }
   
+  var setTitleForEvent = function(eventId, title, succ, fail) {
+    db.events.update({
+      _id: eventId
+    }, {
+      $set : { title : title }
+    }, function (err, docs) {
+      if (err) {
+        fail(err);
+      }
+
+      succ(docs);
+    })
+  }
 
   var getEventsForCreator = function (creator, succ, fail) {
     var didInsertEvent = function (events) {
@@ -172,10 +186,11 @@
   }
 
   module.exports = {
-    updateOrCreateUser: createUser,
-    verifyUser: verifyUser,
-    createEvent: createEvent,
-    getEventsForCreator: getEventsForCreator,
+    updateOrCreateUser  : createUser,
+    verifyUser          : verifyUser,
+    createEvent         : createEvent,
+    getEventsForCreator : getEventsForCreator,
+    setTitleForEvent    : setTitleForEvent,
     addAttendee: addWithRecipPhone(true  /* isAttendee */),
     addRejectee: addWithRecipPhone(false /* isAttendee */)
   }
