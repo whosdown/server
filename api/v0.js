@@ -8,7 +8,7 @@
    * @param req.body = {
               userId  : "52f8359d4cace484d3000004",
               message : "Who's Down for _____",
-              recips  :  [
+              people  :  [
                 {
                   name: "Joe"
                   phone: 1112223333
@@ -39,7 +39,7 @@
       userId: req.body.userId,
       message: req.body.message,
       title: undefined,
-      recips: req.body.recips
+      recips: req.body.people
     }, success, failure);
   }
 

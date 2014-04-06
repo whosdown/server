@@ -1,5 +1,5 @@
 {
-  "name": "happ",
+  "name": "Who's Down",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -8,6 +8,10 @@
     "mongojs": "0.10.0",
     "twilio": "1.5.0",
     "sequelize": "~1.7.0-rc3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whosdown/server.git"
   },
   "engines": {
     "node": "0.10.x"
