@@ -1,17 +1,7 @@
 (function () {
   var mongojs   = require('mongojs')
-  ,   fs        = require('fs')
+  ,   mongoKeys = require('./logins').mongo
   ,   _         = require('underscore');
-
-  var mongoKeys;
-
-  if (fs.existsSync('./private')) {
-    mongoKeys = require('./private/logins').mongo;
-  } else {
-    mongoKeys = {
-      url : process.env.MONGO_URL
-    };
-  }
 
   var consts = {
     duplicate: 11000

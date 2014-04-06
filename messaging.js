@@ -1,15 +1,6 @@
 (function () {
   var fs      = require('fs');
-  var t_keys;
-
-  if (fs.existsSync('./private')) {
-    t_keys = require('./private/logins').twilio;
-  } else {
-    t_keys = {
-      account_id: process.env.TWILIO_ACCOUNT_ID,
-      auth_token: process.env.TWILIO_AUTH_TOKEN
-    }
-  }
+  var t_keys  = require('./logins').twilio;
 
   var client = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
