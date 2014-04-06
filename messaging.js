@@ -3,7 +3,7 @@
   var fs      = require('fs');
   var t_keys;
 
-  if (fs.existsSync(('./private')) {
+  if (fs.existsSync('./private')) {
     t_keys = require('./private/logins').twilio;
   } else {
     t_keys = {
