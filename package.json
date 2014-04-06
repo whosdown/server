@@ -1,6 +1,7 @@
 {
   "name": "whosdown",
   "version": "1.0.0",
+  "main":"app.js",
   "private": true,
   "dependencies": {
     "underscore": "1.6.0",
@@ -15,8 +16,5 @@
   },
   "engines": {
     "node": "0.10.x"
-  },
-  "scripts": {
-    "start": "node app.js"
-  } 
+  }
 }
