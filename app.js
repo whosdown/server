@@ -23,7 +23,7 @@ app.post(api_v0.user.path, api_v0.user.post);
 app.post(api_v0.user.verifyPath, api_v0.user.verify);
 
 var port = 3000
-app.listen(port, function() {
+app.listen(process.env.PORT || port, function() {
   console.log('Express server listening on port %d in %s mode at %s',
       port,
       app.settings.env,
