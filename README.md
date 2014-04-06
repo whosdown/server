@@ -1,4 +1,4 @@
 server
 ======
 
-The server component for Who's Down
+The server component for Whos Down
