@@ -5,19 +5,6 @@
   ,   interpreter = require('../interpreter')
   ,   _           = require('underscore');
 
-  // database.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
-  //   _.map(out, function (event) {
-  //     interpreter.getTitleForMessage(event.message, function (title) {
-  //       database.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
-  //         console.log('Set title to: ' + title + ' for event: ' + event.message);
-  //       }, function (err) {
-  //         console.log('failed to commit title');
-  //       })
-  //     })
-  //   })
-  // }, function (err) {
-  //   console.log(err);
-  // })
   /*  POST /event
    *
    * @param req.body = {
@@ -145,11 +132,23 @@
     database.verifyUser(req.body.userId, req.body.code, success, failure);
   }
 
-  // database.verifyUser('533880df7de014ee20f42b01', 9438007790, function (docs) {
-  //   console.log(docs);
-  // }, function (docs) {
-  //   console.log(docs);
-  // });
+  var setAllTitles = function () {
+    database.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
+      _.map(out, function (event) {
+        interpreter.getTitleForMessage(event.message, function (title) {
+          database.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
+            console.log('Set title to: ' + title + ' for event: ' + event.message);
+          }, function (err) {
+            console.log('failed to commit title');
+          })
+        })
+      })
+    }, function (err) {
+      console.log(err);
+    })
+  }
+
+  // setAllTitles();
 
   module.exports = {
     events: {

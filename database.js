@@ -3,6 +3,7 @@
   ,   mongoKeys = require('./logins').mongo
   ,   _         = require('underscore');
   _.str         = require('underscore.string');
+  _.mixin(_.str.exports());
 
   var consts = {
     duplicate: 11000

@@ -50,9 +50,11 @@
 
       title = (result.title ? result.title[0] : result.title) || 
               (result.searchterm ? result.searchterm[0] : result.searchterm) || 
-              (title === '' ? 'Cool event' : title);
+              (title === '' ? _(message).prune(16) : title);
 
-      callback(_.str.capitalize(title));
+      title = _.rtrim(title, '?');
+      title = _.capitalize(title);
+      callback(title);
     });
   }
 
