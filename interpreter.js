@@ -2,7 +2,6 @@
   var request = require('request')
   ,   maluuba = require('./logins').maluuba
   ,   _       = require('underscore');
-  _.str       = require('underscore.string');
 
   var options = {
     url    : maluuba.url,

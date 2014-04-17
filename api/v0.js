@@ -1,7 +1,7 @@
 (function () {
   var resp        = require('../response').resp
-  ,   message     = require('../messaging')
-  ,   database    = require('../database')
+  ,   msg         = require('../messaging')
+  ,   db          = require('../database')
   ,   interpreter = require('../interpreter')
   ,   _           = require('underscore');
 
@@ -24,6 +24,26 @@
    *
    */
   var createEvent = function(req, res) {
+    var sendTexts = function (userName) {
+      var recips = _.map(req.body.people, function (person) {
+        return person.name;
+      });
+      var recipString = recips.join(", ");
+      var messagesToRecips = _.map(req.body.people, function (person) {
+        var messages = [];
+        var invite = msg.createMessage(person.phone, 
+          "{ " + userName + " via Who's Down } " + req.body.message);
+        var prompt = msg.createMessage(person.phone, 
+          "{ invited: " + recipString + " }");
+        messages.push(invite);
+        messages.push(prompt);
+
+        return messages;
+      });
+
+      msg.sendMessages(messagesToRecips);
+    }
+
     var failure = function (err) {
       if (err) {
         resp.error(res, resp.CONFLICT, err);
@@ -36,8 +56,20 @@
     var success = function (out) {
       resp.success(res, out);
 
+      msg.setReplyUrl(
+        out.eventPhone, 
+        'http://1013a4d5.ngrok.com/api/v0/event/' + out.eventId + '/reply',
+        function (number) { 
+          consol.log(number);
+          db.getUser(req.body.userId, function (user) {
+            sendTexts(user.name);
+          }, function (err) {
+            console.log('failed to get user name');
+          })
+      });
+
       interpreter.getTitleForMessage(req.body.message, function (title) {
-        database.setTitleForEvent(out.eventId, title, function (out) {
+        db.setTitleForEvent(out.eventId, title, function (out) {
           console.log('Set title to: ' + title + ' for event: ' + req.body.message);
         }, function (err) {
           console.log('failed to commit title');
@@ -45,11 +77,12 @@
       })
     }
 
-    database.createEvent({
-      userId: req.body.userId,
-      message: req.body.message,
-      title: undefined,
-      recips: req.body.people
+    db.createEvent({
+      userId  : req.body.userId,
+      message : req.body.message,
+      title   : undefined,
+      recips  : req.body.people,
+      phone   : msg.testPhone.number
     }, success, failure);
   }
 
@@ -73,9 +106,33 @@
       return;
     }
 
-    database.getEventsForCreator(req.query.userId, success, failure);
+    db.getEventsForCreator(req.query.userId, success, failure);
   }
 
+  /* POST /event/:eventId/reply
+   *
+   */
+  var reply = function (req, res) {
+    var failure = function (err) {
+    }
+
+    var success = function (out) {
+      res.format({
+        text : function() {
+          res.send("Sup Caroline...");
+        }
+      })
+    }
+
+
+    console.log(req.body);
+    console.log(req.params);
+    res.format({
+      text : function() {
+        res.send("Sup Caroline...");
+      }
+    })
+  }
 
   /* POST /user
    *
@@ -96,12 +153,12 @@
       resp.success(res, out);
 
       var verifyUrl = "wd://verify?" + out.code;
-      var verifyMessage = message.createMessage(out.phone, verifyUrl);
+      var verifyMessage = msg.createMessage(out.phone, verifyUrl);
 
-      message.sendMessage(verifyMessage);
+      msg.sendMessage(verifyMessage);
     }
 
-    database.updateOrCreateUser(req.body.user, success, failure);
+    db.updateOrCreateUser(req.body.user, success, failure);
     
   }
 
@@ -129,14 +186,14 @@
 
     console.log("Verifying... \nid:" + req.body.userId + "\n code: " + req.body.code);
 
-    database.verifyUser(req.body.userId, req.body.code, success, failure);
+    db.verifyUser(req.body.userId, req.body.code, success, failure);
   }
 
   var setAllTitles = function () {
-    database.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
+    db.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
       _.map(out, function (event) {
         interpreter.getTitleForMessage(event.message, function (title) {
-          database.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
+          db.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
             console.log('Set title to: ' + title + ' for event: ' + event.message);
           }, function (err) {
             console.log('failed to commit title');
@@ -149,17 +206,20 @@
   }
 
   // setAllTitles();
+  var base = '/api/v0';
 
   module.exports = {
     events: {
-      path: '/api/v0/event', 
+      path: base + '/event', 
+      replyPath: base + '/event/:eventId/reply',
       create: createEvent,
-      getAll: getEvents
+      getAll: getEvents,
+      reply: reply
     },
     user: {
-      path: '/api/v0/user',
+      path: base + '/user',
       post: postUser,
-      verifyPath: '/api/v0/verify',
+      verifyPath: base + '/verify',
       verify: verifyUser
     }
   };

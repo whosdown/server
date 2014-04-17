@@ -52,6 +52,17 @@
     );
   }
 
+  var getUser = function (userId, succ, fail) {
+    db.users.find({
+      _id: mongojs.ObjectId(userId)
+    }, function (err, docs) {
+      if (err || !docs) {
+        fail(err);
+      } else {
+        succ(docs[0]);
+      }
+    });
+  }
 
   /*
    * @param eventData (Object) The data for the event. Must contain properties:
@@ -61,7 +72,7 @@
     var dayInMS = 86400000;
     var monthInMS = 2592000000;
 
-    var didInsertEvent = function (eventId) {
+    var didInsertEvent = function (eventId, eventPhone) {
       var recipients = eventData.recips;
 
       for (var i = recipients.length - 1; i >= 0; i--) {
@@ -71,8 +82,12 @@
       db.recipients.insert(recipients, function (err, docs) {
         if (err) {
           fail(err);
-        };
-        succ({eventId: eventId});
+        } else {
+          succ({
+            eventId    : eventId,
+            eventPhone : eventPhone
+          });
+        }
       })
     }
 
@@ -81,13 +96,14 @@
           creator: eventData.userId,
           message: eventData.message,
           title: eventData.title,
+          phone: eventData.phone,
           expirDate: new Date(new Date().getTime() + monthInMS)
         }, function (err, docs) {
           if (err) {
             fail(err);
           }
 
-          didInsertEvent(docs._id);
+          didInsertEvent(docs._id, docs.phone);
       });
     }
 
@@ -106,9 +122,9 @@
     }, function (err, docs) {
       if (err) {
         fail(err);
+      } else {
+        succ(docs);
       }
-
-      succ(docs);
     })
   }
 
@@ -186,9 +202,17 @@
     };
   }
 
+  var getNumber = function (succ, fail) {
+    var testNumber = "+17313261704";
+
+    succ(testNumber);
+  }
+
   module.exports = {
+    getFreeNumber       : getNumber,
     updateOrCreateUser  : createUser,
     verifyUser          : verifyUser,
+    getUser             : getUser,
     createEvent         : createEvent,
     getEventsForCreator : getEventsForCreator,
     setTitleForEvent    : setTitleForEvent,

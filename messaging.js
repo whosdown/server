@@ -1,6 +1,8 @@
 (function () {
-  var fs      = require('fs');
-  var t_keys  = require('./logins').twilio;
+  var fs      = require('fs')
+  ,   t_keys  = require('./logins').twilio
+  ,   _       = require('underscore');
+
 
   var client = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
@@ -24,7 +26,30 @@
     console.log(message);
   }
 
+  var sendMessages = function(messages) {
+    _.each(messages, function (message) {
+      sendMessage(message);
+    })
+  }
+
   var officialNumber = "+13475805352";
+  var testPhone = {
+    number : "+17313261704",
+    sid    : "PN0446ee64d632d1f756a06f260b1144d1"
+  };
+  var numberSidMap = {
+    "+17313261704" : testPhone.sid
+  };
+
+  var setReplyUrl = function (phone, smsUrl, succ) {
+    client.incomingPhoneNumbers(numberSidMap[phone]).update({
+      smsUrl: smsUrl
+    }, function (err, number) {
+      if (!err) {
+        succ(number);
+      };
+    })
+  }
 
   var createMessage = function (to, body, from) {
     return {
@@ -39,9 +64,12 @@
      * 
      *
      */
-    sendMessage: sendMessage,
+    sendMessage  : sendMessage,
+    sendMessages : sendMessages,
+    testPhone    : testPhone,
+    createMessage: createMessage,
 
-    createMessage: createMessage
+    setReplyUrl  : setReplyUrl
   }
 
 })();
