@@ -9,7 +9,7 @@
     duplicate: 11000
   }
 
-  var db = mongojs(mongoKeys.url, ['users', 'events', 'recipients']);
+  var db = mongojs(mongoKeys.url, ['users', 'events', 'recipients', 'messages']);
 
   var createUser = function (user, succ, fail) {
     user['isVerified'] = false;
@@ -70,7 +70,7 @@
    */
   var createEvent = function (eventData, succ, fail) {
     var dayInMS = 86400000;
-    var monthInMS = 2592000000;
+    var TenDaysInMS = dayInMS * 10;
 
     var didInsertEvent = function (eventId, eventPhone) {
       var recipients = eventData.recips;
@@ -97,7 +97,7 @@
           message: eventData.message,
           title: eventData.title,
           phone: eventData.phone,
-          expirDate: new Date(new Date().getTime() + monthInMS)
+          expirDate: new Date(new Date().getTime() + TenDaysInMS)
         }, function (err, docs) {
           if (err) {
             fail(err);
@@ -155,7 +155,7 @@
 
     db.events.find({
         creator: creator
-      }, function (err, docs) {
+      }).sort({expirDate : -1 }, function (err, docs) {
         if (err) {
           fail(err);
         }
@@ -208,6 +208,49 @@
     succ(testNumber);
   }
 
+  var changeRecipStatus = function (eventId, recipPhone, status, succ, fail) {
+    db.recipients.update({
+      event : mongojs.ObjectId(eventId),
+      phone : recipPhone
+    }, {
+      $set: { status : status }
+    }, function (err, docs) {
+      if (err || !docs[0]) {
+        fail(err);
+      } else {
+        succ(docs);
+      }
+    });
+  }
+
+  var findRecipient = function (eventId, recipPhone, succ, fail) {
+    db.recipients.find({
+      event : mongojs.ObjectId(eventId),
+      phone : recipPhone
+    }, function (err, docs) {
+      if (err || !docs[0]) {
+        fail(err);
+      } else {
+        succ(docs[0]);
+      }
+    });
+  }
+
+  var recordMessage = function (message, recipId, eventId, succ, fail) {
+    db.messages.insert({
+      message   : message,
+      recipient : recipId,
+      event     : mongojs.ObjectId(eventId),
+      date      : new Date()
+    }, function (err, docs) {
+      if (err) {
+        fail(err);
+      } else {
+        succ(docs);
+      }
+    })
+  }
+
   module.exports = {
     getFreeNumber       : getNumber,
     updateOrCreateUser  : createUser,
@@ -216,6 +259,9 @@
     createEvent         : createEvent,
     getEventsForCreator : getEventsForCreator,
     setTitleForEvent    : setTitleForEvent,
+    changeRecipStatus   : changeRecipStatus,
+    recordMessage       : recordMessage,
+    findRecipient       : findRecipient,
     addAttendee: addWithRecipPhone(true  /* isAttendee */),
     addRejectee: addWithRecipPhone(false /* isAttendee */)
   }

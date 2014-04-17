@@ -60,7 +60,7 @@
         out.eventPhone, 
         'http://1013a4d5.ngrok.com/api/v0/event/' + out.eventId + '/reply',
         function (number) { 
-          consol.log(number);
+          console.log(number.smsUrl);
           db.getUser(req.body.userId, function (user) {
             sendTexts(user.name);
           }, function (err) {
@@ -114,24 +114,26 @@
    */
   var reply = function (req, res) {
     var failure = function (err) {
-    }
-
-    var success = function (out) {
       res.format({
         text : function() {
-          res.send("Sup Caroline...");
+          res.send("{ Who's Down } \nUnfortunately, you are not invited to this event.");
         }
       })
     }
 
+    var success = function (recip) {
+      db.recordMessage(req.body.Body, recip._id, req.params.eventId 
+         , function (messageDoc) {
+          // Do interpretations
+          console.log(messageDoc);
+        }, function (err) {
+          console.log('failed to store message');
+      })
+      resp.success(res, "hmm");
+    }
 
-    console.log(req.body);
-    console.log(req.params);
-    res.format({
-      text : function() {
-        res.send("Sup Caroline...");
-      }
-    })
+    db.findRecipient(req.params.eventId, req.body.From, success, failure);
+    // console.log(req.body);
   }
 
   /* POST /user
