@@ -23,6 +23,7 @@
   // }
 
   var sendMessage = function(message) {
+    console.log(message);
     twilio.messages.create(message, function(err, message) {
       if (message) {
         console.log(message.sid);
@@ -33,6 +34,7 @@
   }
 
   var sendMessages = function(messages) {
+        console.log(messages);
     _.each(messages, function (message) {
       sendMessage(message);
     })

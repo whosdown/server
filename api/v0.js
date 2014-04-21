@@ -24,7 +24,7 @@
    *
    */
   var createEvent = function(req, res) {
-    var sendTexts = function (userName) {
+    var sendTexts = function (userName, fromPhone) {
       var recips = _.map(req.body.people, function (person) {
         return person.name;
       });
@@ -32,16 +32,16 @@
       var messagesToRecips = _.map(req.body.people, function (person) {
         var messages = [];
         var invite = msg.createMessage(person.phone, 
-          req.body.message + "\n{ " + userName + " via Who's Down }");
+          req.body.message + "\n{ " + userName + " via Who's Down }", fromPhone);
         var prompt = msg.createMessage(person.phone, 
-          "{ invited: " + recipString + " }");
+          "{ invited: " + recipString + " }", fromPhone);
         messages.push(invite);
         messages.push(prompt);
 
         return messages;
       });
 
-      msg.sendMessages(messagesToRecips);
+      msg.sendMessages(_.flatten(messagesToRecips, true));
     }
 
     var failure = function (err) {
@@ -62,7 +62,7 @@
         function (number) { 
           console.log(number.smsUrl);
           db.getUser(req.body.userId, function (user) {
-            sendTexts(user.name);
+            sendTexts(user.name, out.eventPhone);
           }, function (err) {
             console.log('failed to get user name');
           })
