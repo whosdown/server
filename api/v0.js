@@ -41,7 +41,7 @@
         return messages;
       });
 
-      msg.sendMessages(_.flatten(messagesToRecips, true));
+      msg.sendMessages(messagesToRecips);
     }
 
     var failure = function (err) {

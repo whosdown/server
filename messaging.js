@@ -34,8 +34,7 @@
   }
 
   var sendMessages = function(messages) {
-        console.log(messages);
-    _.each(messages, function (message) {
+    _.each(_.flatten(messages), function (message) {
       sendMessage(message);
     })
   }
