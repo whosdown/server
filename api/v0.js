@@ -32,7 +32,7 @@
       var messagesToRecips = _.map(req.body.people, function (person) {
         var messages = [];
         var invite = msg.createMessage(person.phone, 
-          "{ " + userName + " via Who's Down } " + req.body.message);
+          req.body.message + "\n{ " + userName + " via Who's Down }");
         var prompt = msg.createMessage(person.phone, 
           "{ invited: " + recipString + " }");
         messages.push(invite);
@@ -58,7 +58,7 @@
 
       msg.setReplyUrl(
         out.eventPhone, 
-        'http://1013a4d5.ngrok.com/api/v0/event/' + out.eventId + '/reply',
+        'http://whosd.herokuapp.com/api/v0/event/' + out.eventId + '/reply',
         function (number) { 
           console.log(number.smsUrl);
           db.getUser(req.body.userId, function (user) {
@@ -146,7 +146,7 @@
             }
    *
    */
-  var postUser = function (req, res) {
+  var createUser = function (req, res) {
     var failure = function (err) {
       resp.error(res, resp.CONFLICT, err);
     }
@@ -207,20 +207,39 @@
     })
   }
 
+  var getMessages = function (req, res) {
+    var failure = function (err) {
+      resp.error(res, resp.NOT_FOUND, err);
+    }
+
+    var success = function (out) {
+      resp.success(res, out);
+    }
+
+    if (!req.params.eventId) {
+      resp.error(res, resp.BAD);
+      return;
+    }
+
+    db.getMessages(req.params.eventId, success, failure);
+  }
+
   // setAllTitles();
   var base = '/api/v0';
 
   module.exports = {
     events: {
-      path: base + '/event', 
+      path: base + '/event',
+      messagePath: base + '/event/:eventId',
       replyPath: base + '/event/:eventId/reply',
       create: createEvent,
       getAll: getEvents,
+      getMessages: getMessages,
       reply: reply
     },
     user: {
       path: base + '/user',
-      post: postUser,
+      post: createUser,
       verifyPath: base + '/verify',
       verify: verifyUser
     }

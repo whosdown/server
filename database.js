@@ -37,11 +37,11 @@
 
   var verifyUser = function (userId, code, succ, fail) {
     db.users.findAndModify({
-      query: {
-        _id: mongojs.ObjectId(userId),
-        code: parseInt(code) },
-      update: { $set: { isVerified: true, code: "" } },
-      new: true
+      query  : {
+        _id  : mongojs.ObjectId(userId),
+        code : parseInt(code) },
+      update : { $set: { isVerified: true, code: "" } },
+      new    : true
     }, function (err, docs) {
         if (!err) {
           succ(docs);
@@ -251,6 +251,18 @@
     })
   }
 
+  var getMessages = function (eventId, succ, fail) {
+    db.messages.find({
+      event : mongojs.ObjectId(eventId)
+    }).sort({ date : 1 }, function (err, docs) {
+      if (err) {
+        fail(err);
+      } else {
+        succ(docs);
+      }
+    })
+  }
+
   module.exports = {
     getFreeNumber       : getNumber,
     updateOrCreateUser  : createUser,
@@ -261,6 +273,7 @@
     setTitleForEvent    : setTitleForEvent,
     changeRecipStatus   : changeRecipStatus,
     recordMessage       : recordMessage,
+    getMessages         : getMessages,
     findRecipient       : findRecipient,
     addAttendee: addWithRecipPhone(true  /* isAttendee */),
     addRejectee: addWithRecipPhone(false /* isAttendee */)

@@ -4,7 +4,7 @@
   ,   _       = require('underscore');
 
 
-  var client = require('twilio')(t_keys.account_id, t_keys.auth_token);
+  var twilio = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
   // exports.send_message = function(recip, msg) {
   //   var message_info = {
@@ -13,17 +13,23 @@
   //     body: msg
   //   };
 
-  //   client.messages.create(message_info, function(err, message) {
-  //     if (message) {
-  //       console.log(message.sid);
-  //     } else {
-  //       console.log('message creation failed - ' + err);
-  //     }
-  //   });
+    // twilio.messages.create(message_info, function(err, message) {
+    //   if (message) {
+    //     console.log(message.sid);
+    //   } else {
+    //     console.log('message creation failed - ' + err);
+    //   }
+    // });
   // }
 
   var sendMessage = function(message) {
-    console.log(message);
+    twilio.messages.create(message, function(err, message) {
+      if (message) {
+        console.log(message.sid);
+      } else {
+        console.log('message creation failed - ' + err);
+      }
+    });
   }
 
   var sendMessages = function(messages) {
@@ -42,8 +48,9 @@
   };
 
   var setReplyUrl = function (phone, smsUrl, succ) {
-    client.incomingPhoneNumbers(numberSidMap[phone]).update({
-      smsUrl: smsUrl
+    twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
+      smsUrl    : smsUrl,
+      smsMethod : 'POST'
     }, function (err, number) {
       if (!err) {
         succ(number);
