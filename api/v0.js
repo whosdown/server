@@ -134,21 +134,18 @@
             }
    */
   var getEvents = function(req, res) {
-    console.log(req.query)
     if (!req.query.userId) {
       resp.error(res, resp.BAD);
       return;
     }
 
     db.events.get(req.query.userId)
-        .then(function (events) {
-            console.log("succy");
-            resp.success(res, events);
-          },  function (err) {
-            console.log("faily");
-            res.status(BAD).send("agh");
-            resp.error(res, resp.NOT_FOUND, err);
-          });
+      .then(function (events) {
+          resp.success(res, events);
+        })
+      .catch(function (err) {
+          resp.error(res, resp.NOT_FOUND, err);
+        });
   }
 
   /* POST /event/:eventId/reply

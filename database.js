@@ -1,41 +1,20 @@
 (function () {
   var mongojs   = require('mongojs')
   ,   mongoKeys = require('./logins').mongo
-  ,   Q         = require('q')
+  ,   RSVP      = require('rsvp')
   ,   _         = require('underscore');
   _.str         = require('underscore.string');
   _.mixin(_.str.exports());
 
-  /*
-   * Call a Node-style async function and return a promise.
-   *
-   * @param {function} fn A function that accepts a Node-style callback.
-   * @param {...*} var_args A variable number of arguments to pass to the Node
-   *         function.
-   * @return {Promise}
-   */
-  RSVP.q = function(fn) {
-    var __slice = Array.prototype.slice;
-
-    var args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-
-    return new RSVP.Promise(function(resolve, reject) {
-      var cb = function() {
-        var err, var_args;
-        err = arguments[0], var_args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-        if (err) {
-          return reject(err);
-        } else if (var_args.length > 1) {
-          return resolve(Array.prototype.slice.call(var_args));
-        } else {
-          return resolve(var_args[0]);
-        }
-      };
-
-      args.push(cb);
-      return fn.apply(fn, args);
-    });
-  };
+  var p = function (resolve, reject) {
+    return function (err, docs) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(docs);
+      }
+    };
+  }
 
   var consts = {
     duplicate: 11000
@@ -95,9 +74,18 @@
 
   /********************* Events *****************************/
 
-  var getEvents = function (creatorId, cb) {
+  var getEvents = function (creatorId) {
+    var findEventsPromise = new RSVP.Promise(function (res, rej) {
+      db.events.find({ creator : creatorId }).sort({ expirDate : -1 }, p(res, rej))
+    })
 
-    RSVP.q(db.events.find({ creator : creatorId }).sort, { expirDate : -1 })
+    var findRecipsPromise = function (eventIds) {
+      return new RSVP.Promise(function (res, rej) {
+        db.recipients.find({ event : { $in: eventIds } }, p(res, rej))
+      });
+    }
+
+    return findEventsPromise
         .then(function (events) {
             var eventIds = _.map(events, function (event) {
               return event._id;
@@ -105,23 +93,18 @@
 
             return RSVP.hash({
               events : events,
-              recips : RSVP.q(db.recipients.find, { event : { $in: eventIds } })
+              recips : findRecipsPromise(eventIds)
             });
           })
         .then(function (results) {
-            var eventsWithPeople = _.map(results.events, function (event) {
+            return _.map(results.events, function (event) {
               event.people = _.filter(results.recips, function (recip) {
                 return _.isEqual(recip.event, event._id);
               });
 
               return event;
             });
-
-            cb(null, eventsWithPeople);
           })
-        .catch(function (err) {
-          cb(err);
-        });
   }
 
   var createEvent = function (eventData, cb) {
