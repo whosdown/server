@@ -24,15 +24,16 @@
     request(options, function (err, resp, body) {
       if (!err && resp.statusCode == 200) {
         var info = JSON.parse(body);
-        cb(info);
+        cb(null, info);
       } else {
         console.log(body);
+        cb(err)
       }
     });
   }
 
   var getTitleForMessage = function (message, callback) {
-    mInterperet(message, function (info) {
+    mInterperet(message, function (err, info) {
       var result = info.entities || {};
       var title = '';
       if (result.destination) {
@@ -53,7 +54,7 @@
 
       title = _.rtrim(title, '?');
       title = _.capitalize(title);
-      callback(title);
+      callback(err, title);
     });
   }
 

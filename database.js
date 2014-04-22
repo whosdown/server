@@ -102,10 +102,10 @@
               return event._id;
             });
 
-            return RSVP.hash(
+            return RSVP.hash({
               events : events,
               recips : RSVP.q(db.recipients.find, { event : { $in: eventIds } })
-            )
+            })
           })
         .then(function (results) {
             var eventsWithPeople = _.map(results.events, function (event) {
@@ -128,11 +128,11 @@
     var TenDaysInMS = dayInMS * 10;
 
     RSVP.q(db.events.insert, {
-            creator: eventData.userId,
-            message: eventData.message,
-            title: eventData.title,
-            phone: eventData.phone,
-            expirDate: new Date(new Date().getTime() + TenDaysInMS)
+            creator   : eventData.userId,
+            message   : eventData.message,
+            title     : eventData.title,
+            phone     : eventData.phone,
+            expirDate : new Date(new Date().getTime() + TenDaysInMS)
           })
         .then(function (newEvent) {
             var recipients = _.map(eventData.recips, function (recipient) {
@@ -191,7 +191,7 @@
     }, cb);
   }
 
-  exports.messages : {
+  exports.messages = {
     create : setMessage,
     get    : getMessages, 
   }
@@ -210,7 +210,7 @@
         });
   }
 
-  var exports.recipient = {
+  exports.recipients = {
     get : getRecipient
   }
 

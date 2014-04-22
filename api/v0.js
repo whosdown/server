@@ -3,7 +3,39 @@
   ,   msg         = require('../messaging')
   ,   db          = require('../database')
   ,   interpreter = require('../interpreter')
+  ,   RSVP        = require('rsvp')
   ,   _           = require('underscore');
+
+  /*
+   * Call a Node-style async function and return a promise.
+   *
+   * @param {function} fn A function that accepts a Node-style callback.
+   * @param {...*} var_args A variable number of arguments to pass to the Node
+   *         function.
+   * @return {Promise}
+   */
+  RSVP.q = function(fn) {
+    var __slice = Array.prototype.slice;
+
+    var args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+
+    return new RSVP.Promise(function(resolve, reject) {
+      var cb = function() {
+        var err, var_args;
+        err = arguments[0], var_args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+        if (err) {
+          return reject(err);
+        } else if (var_args.length > 1) {
+          return resolve(Array.prototype.slice.call(var_args));
+        } else {
+          return resolve(var_args[0]);
+        }
+      };
+
+      args.push(cb);
+      return fn.apply(fn, args);
+    });
+  };
 
   /*  POST /event
    *
@@ -23,68 +55,77 @@
             }
    *
    */
-  var createEvent = function(req, res) {
-    var sendTexts = function (userName, fromPhone) {
-      var recips = _.map(req.body.people, function (person) {
-        return person.name;
-      });
-      var recipString = recips.join(", ");
-      var messagesToRecips = _.map(req.body.people, function (person) {
-        var messages = [];
-        var invite = msg.createMessage(person.phone, 
-          req.body.message + "\n{ " + userName + " via Who's Down }", fromPhone);
-        var prompt = msg.createMessage(person.phone, 
-          "{ invited: " + recipString + " }", fromPhone);
-        messages.push(invite);
-        messages.push(prompt);
-
-        return messages;
-      });
-
-      msg.sendMessages(_.flatten(messagesToRecips, true));
-    }
-
-    var failure = function (err) {
-      if (err) {
-        resp.error(res, resp.CONFLICT, err);
-      } else {
-        resp.error(res, resp.BAD);
-      }
-      return;
-    }
-
-    var success = function (out) {
-      resp.success(res, out);
-
-      msg.setReplyUrl(
-        out.eventPhone, 
-        'http://whosd.herokuapp.com/api/v0/event/' + out.eventId + '/reply',
-        function (number) { 
-          console.log(number.smsUrl);
-          db.getUser(req.body.userId, function (user) {
-            sendTexts(user.name, out.eventPhone);
-          }, function (err) {
-            console.log('failed to get user name');
+  var createEvent = function (req, res) {
+    RSVP.q(db.events.create, {
+            userId  : req.body.userId,
+            message : req.body.message,
+            title   : undefined,
+            recips  : req.body.people,
+            phone   : msg.testPhone.number
           })
-      });
+        .then(function (newEvent) {
+            resp.success(res, newEvent);
+            RSVP.q(interpreter.getTitleForMessage, req.body.message)
+                .then(function (title) {
+                    return RSVP.q(db.events.setTitle, newEvent.eventId, title)
+                  })
+                .then(function (titledEvent) {
+                    console.log('Set title to: ' + titledEvent.title + 
+                                ' for event: ' + req.body.message);
+                  })
+                .catch(function (err) {
+                  console.log(err);
+                });
+            var replyUrl = 'http://whosd.herokuapp.com/api/v0/event/' + 
+                            newEvent.eventId + '/reply'
 
-      interpreter.getTitleForMessage(req.body.message, function (title) {
-        db.setTitleForEvent(out.eventId, title, function (out) {
-          console.log('Set title to: ' + title + ' for event: ' + req.body.message);
-        }, function (err) {
-          console.log('failed to commit title');
-        })
-      })
-    }
+            return RSVP.hash({
+              number   : RSVP.q(msg.setReplyUrl, newEvent.eventPhone, replyUrl),
+              newEvent : newEvent
+            });
+          })
+        .then(function (results) {
+            console.log(results.number);
+            return RSVP.hash({
+              newEvent : newEvent,
+              user     : RSVP.q(db.users.get, req.body.userId)
+            });
+          })
+        .then(function (results) {
+            var recips = _.map(req.body.people, function (person) {
+              return person.name;
+            });
+            var recipString = recips.join(", ");
+            var messagesToRecips = _.map(req.body.people, function (person) {
+              var messages = [];
+              var invite = msg.createMessage(
+                person.phone, 
+                req.body.message + "\n{ " + results.user.name + " via Who's Down }", 
+                newEvent.eventPhone);
+              var prompt = msg.createMessage(
+                person.phone, 
+                "{ invited: " + recipString + " }", 
+                newEvent.eventPhone);
+              messages.push(invite);
+              messages.push(prompt);
 
-    db.createEvent({
-      userId  : req.body.userId,
-      message : req.body.message,
-      title   : undefined,
-      recips  : req.body.people,
-      phone   : msg.testPhone.number
-    }, success, failure);
-  }
+              return messages;
+            });
+
+            return RSVP.all(
+              _.map(_.flatten(messagesToRecips), function (message) {
+                return RSVP.q(msg.sendMessage, message);
+              })
+            )
+          })
+        .then(function (messages) {
+            console.log(messages);
+          })
+        .catch(function (err) {
+            resp.error(res, resp.BAD, err);
+            console.log(err);
+          });
+  };
 
   /* GET /event
    *
@@ -93,47 +134,43 @@
             }
    */
   var getEvents = function(req, res) {
-    var failure = function (err) {
-      resp.error(res, resp.NOT_FOUND, err);
-    }
-
-    var success = function (out) {
-      resp.success(res, out);
-    }
-
+    console.log(req.query)
     if (!req.query.userId) {
       resp.error(res, resp.BAD);
       return;
     }
 
-    db.getEventsForCreator(req.query.userId, success, failure);
+    RSVP.q(db.events.get, req.query.userId)
+        .then(function (events) {
+            resp.success(res, events);
+          },  function (err) {
+            resp.error(res, resp.NOT_FOUND, err);
+          });
   }
 
   /* POST /event/:eventId/reply
    *
    */
   var reply = function (req, res) {
-    var failure = function (err) {
-      res.format({
-        text : function() {
-          res.send("{ Who's Down } \nUnfortunately, you are not invited to this event.");
-        }
-      })
-    }
-
-    var success = function (recip) {
-      db.recordMessage(req.body.Body, recip._id, req.params.eventId 
-         , function (messageDoc) {
-          // Do interpretations
-          console.log(messageDoc);
-        }, function (err) {
-          console.log('failed to store message');
-      })
-      resp.success(res, "hmm");
-    }
-
-    db.findRecipient(req.params.eventId, req.body.From, success, failure);
-    // console.log(req.body);
+    RSVP.q(db.recipients.get, req.params.eventId, req.body.From)
+        .then(function (recip) {
+            return RSVP.q(db.messages.create, 
+                          req.body.Body, 
+                          recip._id, 
+                          req.params.eventId);
+          })
+        .then(function (messageDoc) {
+            console.log(messageDoc);
+            resp.success(res, "hmm");
+          })
+        .catch(function (err) {
+            console.log(err);
+            res.format({
+              text : function() {
+                res.send("{ Who's Down } \nUnfortunately, you are not invited to this event.");
+              }
+            });
+          })
   }
 
   /* POST /user
@@ -147,21 +184,22 @@
    *
    */
   var createUser = function (req, res) {
-    var failure = function (err) {
-      resp.error(res, resp.CONFLICT, err);
-    }
+    RSVP.q(db.users.create, req.body.user)
+        .then(function (user) {
+            resp.success(res, out);
 
-    var success = function (out) {
-      resp.success(res, out);
+            var verifyUrl = "wd://verify?" + out.code;
+            var verifyMessage = msg.createMessage(out.phone, verifyUrl);
 
-      var verifyUrl = "wd://verify?" + out.code;
-      var verifyMessage = msg.createMessage(out.phone, verifyUrl);
-
-      msg.sendMessage(verifyMessage);
-    }
-
-    db.updateOrCreateUser(req.body.user, success, failure);
-    
+            return RSVP.q(msg.sendMessage, verifyMessage);
+          })
+        .then(function (message) {
+            console.log(message);
+          })
+        .catch(function (err) {
+            console.log(err);
+            resp.error(res, resp.CONFLICT, err);
+          });
   }
 
   /* POST /verify
@@ -173,55 +211,48 @@
    *
    */
   var verifyUser = function (req, res) {
-    var failure = function (err) {
-      resp.error(res, resp.BAD);
-      return;
-    }
-
-    var success = function (out) {
-      if (out && out.isVerified) {
-        resp.success(res, out);
-      } else {
-        resp.error(res, resp.INTERNAL);
-      }
-    }
-
     console.log("Verifying... \nid:" + req.body.userId + "\n code: " + req.body.code);
 
-    db.verifyUser(req.body.userId, req.body.code, success, failure);
+    RSVP.q(db.users.verify, req.body.userId, req.body.code)
+        .then(function (user) {
+            if (user && user.isVerified) {
+              resp.success(res, out);
+            } else {
+              resp.error(res, resp.INTERNAL);
+            }
+          },  function (err) {
+            resp.error(res, resp.BAD);
+          })
   }
 
-  var setAllTitles = function () {
-    db.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
-      _.map(out, function (event) {
-        interpreter.getTitleForMessage(event.message, function (title) {
-          db.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
-            console.log('Set title to: ' + title + ' for event: ' + event.message);
-          }, function (err) {
-            console.log('failed to commit title');
-          })
-        })
-      })
-    }, function (err) {
-      console.log(err);
-    })
-  }
+  // var setAllTitles = function () {
+  //   db.getEventsForCreator('533cd5fd7de014ee20f42b07', function (out) {
+  //     _.map(out, function (event) {
+  //       interpreter.getTitleForMessage(event.message, function (title) {
+  //         db.setTitleForEvent(event._id, _.str.capitalize(title), function (out) {
+  //           console.log('Set title to: ' + title + ' for event: ' + event.message);
+  //         }, function (err) {
+  //           console.log('failed to commit title');
+  //         })
+  //       })
+  //     })
+  //   }, function (err) {
+  //     console.log(err);
+  //   })
+  // }
 
   var getMessages = function (req, res) {
-    var failure = function (err) {
-      resp.error(res, resp.NOT_FOUND, err);
-    }
-
-    var success = function (out) {
-      resp.success(res, out);
-    }
-
     if (!req.params.eventId) {
       resp.error(res, resp.BAD);
       return;
     }
 
-    db.getMessages(req.params.eventId, success, failure);
+    RSVP.q(db.getMessages, req.params.eventId)
+        .then(function (messages) {
+            resp.success(res, messages);
+          },  function (err) {
+            resp.error(res, resp.NOT_FOUND, err);
+          });
   }
 
   // setAllTitles();
@@ -245,6 +276,6 @@
     }
   };
 
-  
+
 
 })();

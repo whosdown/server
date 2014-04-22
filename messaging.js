@@ -22,21 +22,15 @@
     // });
   // }
 
-  var sendMessage = function(message) {
+  var sendMessage = function(message, cb) {
     console.log(message);
-    twilio.messages.create(message, function(err, message) {
-      if (message) {
-        console.log(message.sid);
-      } else {
-        console.log('message creation failed - ' + err);
-      }
-    });
+    twilio.messages.create(message, cb);
   }
 
-  var sendMessages = function(messages) {
-        console.log(messages);
-    _.each(messages, function (message) {
-      sendMessage(message);
+  var sendMessages = function(messages, cb) {
+    console.log(messages);
+    _.each(_.flatten(messages), function (message) {
+      sendMessage(message, cb);
     })
   }
 
@@ -49,15 +43,11 @@
     "+17313261704" : testPhone.sid
   };
 
-  var setReplyUrl = function (phone, smsUrl, succ) {
+  var setReplyUrl = function (phone, smsUrl, cb) {
     twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
       smsUrl    : smsUrl,
       smsMethod : 'POST'
-    }, function (err, number) {
-      if (!err) {
-        succ(number);
-      };
-    })
+    }, cb);
   }
 
   var createMessage = function (to, body, from) {
