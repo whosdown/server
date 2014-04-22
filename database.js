@@ -1,7 +1,7 @@
 (function () {
   var mongojs   = require('mongojs')
   ,   mongoKeys = require('./logins').mongo
-  ,   RSVP      = require('rsvp')
+  ,   Q         = require('q')
   ,   _         = require('underscore');
   _.str         = require('underscore.string');
   _.mixin(_.str.exports());
@@ -80,9 +80,9 @@
 
   var getUser = function (userId, cb) {
     RSVP.q(db.users.find, { _id : mongojs.ObjectId(userId) })
-        .then(function (users) {
+        .then(function userFindSuccess (users) {
             cb(null, users[0]);
-          },  function (err) {
+          },  function userFindFailure (err) {
             cb(err);
         })
   };
@@ -96,6 +96,7 @@
   /********************* Events *****************************/
 
   var getEvents = function (creatorId, cb) {
+
     RSVP.q(db.events.find({ creator : creatorId }).sort, { expirDate : -1 })
         .then(function (events) {
             var eventIds = _.map(events, function (event) {
@@ -105,7 +106,7 @@
             return RSVP.hash({
               events : events,
               recips : RSVP.q(db.recipients.find, { event : { $in: eventIds } })
-            })
+            });
           })
         .then(function (results) {
             var eventsWithPeople = _.map(results.events, function (event) {

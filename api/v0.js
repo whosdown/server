@@ -14,7 +14,7 @@
    *         function.
    * @return {Promise}
    */
-  RSVP.q = function(fn) {
+  var q = function(fn) {
     var __slice = Array.prototype.slice;
 
     var args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
@@ -56,7 +56,7 @@
    *
    */
   var createEvent = function (req, res) {
-    RSVP.q(db.events.create, {
+    q(db.events.create, {
             userId  : req.body.userId,
             message : req.body.message,
             title   : undefined,
@@ -65,9 +65,9 @@
           })
         .then(function (newEvent) {
             resp.success(res, newEvent);
-            RSVP.q(interpreter.getTitleForMessage, req.body.message)
+            q(interpreter.getTitleForMessage, req.body.message)
                 .then(function (title) {
-                    return RSVP.q(db.events.setTitle, newEvent.eventId, title)
+                    return q(db.events.setTitle, newEvent.eventId, title)
                   })
                 .then(function (titledEvent) {
                     console.log('Set title to: ' + titledEvent.title + 
@@ -80,7 +80,7 @@
                             newEvent.eventId + '/reply'
 
             return RSVP.hash({
-              number   : RSVP.q(msg.setReplyUrl, newEvent.eventPhone, replyUrl),
+              number   : q(msg.setReplyUrl, newEvent.eventPhone, replyUrl),
               newEvent : newEvent
             });
           })
@@ -88,7 +88,7 @@
             console.log(results.number);
             return RSVP.hash({
               newEvent : newEvent,
-              user     : RSVP.q(db.users.get, req.body.userId)
+              user     : q(db.users.get, req.body.userId)
             });
           })
         .then(function (results) {
@@ -114,7 +114,7 @@
 
             return RSVP.all(
               _.map(_.flatten(messagesToRecips), function (message) {
-                return RSVP.q(msg.sendMessage, message);
+                return q(msg.sendMessage, message);
               })
             )
           })
@@ -140,10 +140,13 @@
       return;
     }
 
-    RSVP.q(db.events.get, req.query.userId)
+    db.events.get(req.query.userId)
         .then(function (events) {
+            console.log("succy");
             resp.success(res, events);
           },  function (err) {
+            console.log("faily");
+            res.status(BAD).send("agh");
             resp.error(res, resp.NOT_FOUND, err);
           });
   }
@@ -152,9 +155,9 @@
    *
    */
   var reply = function (req, res) {
-    RSVP.q(db.recipients.get, req.params.eventId, req.body.From)
+    q(db.recipients.get, req.params.eventId, req.body.From)
         .then(function (recip) {
-            return RSVP.q(db.messages.create, 
+            return q(db.messages.create, 
                           req.body.Body, 
                           recip._id, 
                           req.params.eventId);
@@ -184,14 +187,14 @@
    *
    */
   var createUser = function (req, res) {
-    RSVP.q(db.users.create, req.body.user)
+    q(db.users.create, req.body.user)
         .then(function (user) {
             resp.success(res, out);
 
             var verifyUrl = "wd://verify?" + out.code;
             var verifyMessage = msg.createMessage(out.phone, verifyUrl);
 
-            return RSVP.q(msg.sendMessage, verifyMessage);
+            return q(msg.sendMessage, verifyMessage);
           })
         .then(function (message) {
             console.log(message);
@@ -213,7 +216,7 @@
   var verifyUser = function (req, res) {
     console.log("Verifying... \nid:" + req.body.userId + "\n code: " + req.body.code);
 
-    RSVP.q(db.users.verify, req.body.userId, req.body.code)
+    q(db.users.verify, req.body.userId, req.body.code)
         .then(function (user) {
             if (user && user.isVerified) {
               resp.success(res, out);
@@ -247,7 +250,7 @@
       return;
     }
 
-    RSVP.q(db.getMessages, req.params.eventId)
+    q(db.getMessages, req.params.eventId)
         .then(function (messages) {
             resp.success(res, messages);
           },  function (err) {

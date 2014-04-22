@@ -10,7 +10,9 @@
     "twilio": "1.5.0",
     "sequelize": "~1.7.0-rc3",
     "request": "~2.34.0",
-    "underscore.string": "~2.3.3"
+    "underscore.string": "~2.3.3",
+    "q": "~1.0.1",
+    "q-mongodb": "0.0.1"
   },
   "repository": {
     "type": "git",
