@@ -1,8 +1,18 @@
 (function () {
   var fs      = require('fs')
   ,   t_keys  = require('./logins').twilio
+  ,   RSVP    = require('rsvp')
   ,   _       = require('underscore');
 
+  var p = function (resolve, reject, index) {
+    return function (err, docs) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(index ? docs[index] : docs);
+      }
+    };
+  }
 
   var twilio = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
@@ -22,16 +32,19 @@
     // });
   // }
 
-  var sendMessage = function(message, cb) {
+  var sendMessage = function(message) {
     console.log(message);
-    twilio.messages.create(message, cb);
+    return new RSVP.Promise(function (res, rej) {
+      twilio.messages.create(message, p(res, rej));
+    });
   }
 
   var sendMessages = function(messages, cb) {
-    console.log(messages);
-    _.each(_.flatten(messages), function (message) {
-      sendMessage(message, cb);
-    })
+    return RSVP.all(
+      _.map(_.flatten(messages), function (message) {
+        return sendMessage(message);
+      })
+    );
   }
 
   var officialNumber = "+13475805352";
@@ -43,11 +56,13 @@
     "+17313261704" : testPhone.sid
   };
 
-  var setReplyUrl = function (phone, smsUrl, cb) {
-    twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
-      smsUrl    : smsUrl,
-      smsMethod : 'POST'
-    }, cb);
+  var setReplyUrl = function (phone, smsUrl) {
+    return new RSVP.Promise(function (res, rej) {
+      twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
+        smsUrl    : smsUrl,
+        smsMethod : 'POST'
+      }, p(res, rej));
+    });
   }
 
   var createMessage = function (to, body, from) {

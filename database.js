@@ -6,12 +6,12 @@
   _.str         = require('underscore.string');
   _.mixin(_.str.exports());
 
-  var p = function (resolve, reject) {
+  var p = function (resolve, reject, index) {
     return function (err, docs) {
       if (err) {
         reject(err);
       } else {
-        resolve(docs);
+        resolve(index ? docs[0] : docs);
       }
     };
   }
@@ -27,44 +27,49 @@
   /********************* Users *****************************/
 
 
-  var createUser = function (user, cb) {
+  var createUser = function (user) {
     user['isVerified'] = false;
     user['code'] = Math.floor(Math.random() * Math.pow(10,10));
 
-    db.users.findAndModify({
-      query: { 
-        phone : user.phone 
-      },
-      update: user,
-      upsert: true,
-      new: true
-    }, cb);
+    var makeUserPromise = new RSVP.Promise(function (res, rej) {
+      db.users.findAndModify({
+          query: { 
+            phone : user.phone 
+          },
+          update: user,
+          upsert: true,
+          new: true
+        }, p(res, rej))
+    });
+
+    return makeUserPromise;
   };
 
-  var verifyUser = function (userId, code, cb) {
-    db.users.findAndModify({
-      query  : {
-        _id  : mongojs.ObjectId(userId),
-        code : parseInt(code) 
-      },
-      update : { 
-        $set : { 
-          isVerified : true, 
-          code       : "" 
-        } 
-      },
-      new    : true
-    }, cb);
-  };
+  var verifyUser = function (userId, code) {
+    var checkUserPromise = new RSVP.Promise(function (res, rej) {
+      db.users.findAndModify({
+        query  : {
+          _id  : mongojs.ObjectId(userId),
+          code : parseInt(code) 
+        },
+        update : { 
+          $set : { 
+            isVerified : true, 
+            code       : "" 
+          } 
+        },
+        new    : true
+      }, p(res, rej));
+    });
+    return checkUserPromise
+  }
 
-  var getUser = function (userId, cb) {
-    RSVP.q(db.users.find, { _id : mongojs.ObjectId(userId) })
-        .then(function userFindSuccess (users) {
-            cb(null, users[0]);
-          },  function userFindFailure (err) {
-            cb(err);
-        })
-  };
+
+  var getUser = function (userId) {
+    return new RSVP.Promise(function (res, rej) {
+      db.users.find({ _id : mongojs.ObjectId(userId) }, p(res, rej, true));
+    });
+  }
 
   exports.users = {
     verify : verifyUser,
@@ -86,67 +91,75 @@
     }
 
     return findEventsPromise
-        .then(function (events) {
-            var eventIds = _.map(events, function (event) {
-              return event._id;
-            });
+    .then(function (events) {
+        var eventIds = _.map(events, function (event) {
+          return event._id;
+        });
 
-            return RSVP.hash({
-              events : events,
-              recips : findRecipsPromise(eventIds)
-            });
-          })
-        .then(function (results) {
-            return _.map(results.events, function (event) {
-              event.people = _.filter(results.recips, function (recip) {
-                return _.isEqual(recip.event, event._id);
-              });
+        return RSVP.hash({
+          events : events,
+          recips : findRecipsPromise(eventIds)
+        });
+      })
+    .then(function (results) {
+        return _.map(results.events, function (event) {
+          event.people = _.filter(results.recips, function (recip) {
+            return _.isEqual(recip.event, event._id);
+          });
 
-              return event;
-            });
-          })
+          return event;
+        });
+      })
   }
 
-  var createEvent = function (eventData, cb) {
+  var createEvent = function (eventData) {
     var dayInMS = 86400000;
     var TenDaysInMS = dayInMS * 10;
 
-    RSVP.q(db.events.insert, {
-            creator   : eventData.userId,
-            message   : eventData.message,
-            title     : eventData.title,
-            phone     : eventData.phone,
-            expirDate : new Date(new Date().getTime() + TenDaysInMS)
-          })
-        .then(function (newEvent) {
-            var recipients = _.map(eventData.recips, function (recipient) {
-              return recipient.event = newEvent._id;
-            });
+    var addEventsPromise = function () {
+      return new RSVP.Promise(function (res, rej) {
+        db.events.insert({
+          creator   : eventData.userId,
+          message   : eventData.message,
+          title     : eventData.title,
+          phone     : eventData.phone,
+          expirDate : new Date(new Date().getTime() + TenDaysInMS)
+        }, p(res, rej));
+      });
+    }
 
-            return RSVP.hash({
-              newEvent : newEvent,
-              recips   : RSVP.q(db.recipients.insert, recipients)
-            });
-          })
-        .then(function (results) {
-            cb(null, {
-              eventId    : results.newEvent._id,
-              eventPhone : results.newEvent.phone
-            });
-          })
-        .catch(function (err) {
-          cb(err);
+    var addRecipientsPromise = function (recipients) {
+      return new RSVP.Promise(function (res, rej) {
+        db.recipients.insert(recipients, p(res, rej));
+      });
+    }
+
+    return addEventsPromise()
+    .then(function (newEvent) {
+        var recipients = _.map(eventData.recips, function (recipient) {
+          return recipient.event = newEvent._id;
         });
+
+        return addRecipientsPromise(recipients)
+        .then(function () {
+          return {
+            eventId    : newEvent._id,
+            eventPhone : newEvent.phone
+          };
+        })
+      });
   };
 
-  var setEventTitle = function (eventId, title, cb) {
-    db.events.update({
-      _id : eventId
-    }, {
-      $set : { 
-        title : title 
-      }
-    }, cb);
+  var setEventTitle = function (eventId, title) {
+    return new RSVP.Promise(function (res, rej) {
+      db.events.update({
+          _id : eventId
+        }, {
+          $set : { 
+            title : title 
+          }
+        }, p(res, rej));
+    });
   }
 
   exports.events = {
@@ -158,21 +171,21 @@
   /********************* Messages *****************************/
 
 
-  var setMessage = function (message, recipId, eventId, cb) {
-    db.messages.insert({
+  var setMessage = function (message, recipId, eventId) {
+    return db.messages.insert({
       message   : message,
       recipient : recipId,
       event     : mongojs.ObjectId(eventId),
       date      : new Date()
-    }, cb);
+    });
   }
 
-  var getMessages = function (eventId, cb) {
-    db.messages.find({
-      event : mongojs.ObjectId(eventId)
-    }).sort({ 
-      date : 1 
-    }, cb);
+  var getMessages = function (eventId) {
+    return new RSVP.Promise(function (res, rej) {
+      db.messages.find({
+        event : mongojs.ObjectId(eventId)
+      }).sort({ date : 1 }, p(res, rej));
+    });
   }
 
   exports.messages = {
@@ -182,16 +195,13 @@
 
   /********************* Recipient *****************************/
 
-  var getRecipient = function (eventId, recipPhone, cb) {
-    RSVP.q(db.recipients.find, {
-            event : mongojs.ObjectId(eventId),
-            phone : recipPhone
-          })
-        .then(function (users) {
-            cb(null, users[0]);
-          },  function (err) {
-            cb(err);
-        });
+  var getRecipient = function (eventId, recipPhone) {
+    return new RSVP.Promise(function (res, rej) {
+      db.recipients.find({
+        event : mongojs.ObjectId(eventId),
+        phone : recipPhone
+      }, p(res, rej, true));
+    });
   }
 
   exports.recipients = {

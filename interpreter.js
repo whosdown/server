@@ -1,6 +1,7 @@
 (function () {
   var request = require('request')
   ,   maluuba = require('./logins').maluuba
+  ,   RSVP    = require('rsvp')
   ,   _       = require('underscore');
 
   var options = {
@@ -12,7 +13,7 @@
     }
   };
 
-  var mInterperet = function (phrase, cb) {
+  var mInterperet = function (phrase) {
     var options = {
       url    : maluuba.url,
       method : 'GET',
@@ -21,19 +22,23 @@
         phrase : phrase
       }
     };
-    request(options, function (err, resp, body) {
-      if (!err && resp.statusCode == 200) {
-        var info = JSON.parse(body);
-        cb(null, info);
-      } else {
-        console.log(body);
-        cb(err)
-      }
+
+    return new RSVP.Promise(function (resolve, reject) {
+      request(options, function (err, resp, body) {
+        if (!err && resp.statusCode == 200) {
+          var info = JSON.parse(body);
+          resolve(info);
+        } else {
+          console.log(body);
+          reject(err);
+        }
+      });     
     });
   }
 
-  var getTitleForMessage = function (message, callback) {
-    mInterperet(message, function (err, info) {
+  var getTitleForMessage = function (message) {
+    return mInterperet(message)
+    .then(function (info) {
       var result = info.entities || {};
       var title = '';
       if (result.destination) {
@@ -54,7 +59,8 @@
 
       title = _.rtrim(title, '?');
       title = _.capitalize(title);
-      callback(err, title);
+      
+      return title;
     });
   }
 
