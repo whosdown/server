@@ -130,11 +130,19 @@
     .then(function (results) {
         resp.success(res, results.message);
         var messageToRecips = results.user.name + ' : ' + req.body.message;
-        return _.map(results.recipients, function (recip) {
-          return msg.createMessage(recip.phone, 
-                                   messageToRecips, 
-                                   results.event.phone);
-        })
+        return _.chain(results.recipients)
+          .filter(function (recip) {
+            if (!recip.status) {
+                  return true;
+                }
+
+                return recip.status === 0 || recip.status === 1;
+          })
+          .map(function (recip) {
+            return msg.createMessage(recip.phone, 
+                                     messageToRecips, 
+                                     results.event.phone);
+          }).value();
       })
     .then(msg.sendMessages)
     .catch(function (err) {
@@ -208,12 +216,14 @@
       })
     .then(function (results) {
       console.log('sentiment: ' + results.sentiment);
+      console.log('type: ' + typeof results.replier._id);
 
-      if (results.messages.length > 2) {
-        return results.replier;
-      } else {
+
+      // if (results.messages.length > 2) {
+      //   return results.replier;
+      // } else {
         return db.recipients.setStatus(results.replier._id, results.sentiment);
-      }
+      // }
     })
     .then(function (replier) {
       console.log(replier);
@@ -314,8 +324,8 @@
       resp.error(res, resp.BAD);
       return;
     }
-    
-    db.recipients.setStatus(req.body._id, req.body.status)
+
+    db.recipients.setStatus(db.id(req.body._id), req.body.status)
     .then(function (results) {
         console.log('updateRecipient: ');
         console.log(results);

@@ -241,6 +241,8 @@
     setStatus : setRecipientStatus
   }
 
+  exports.id = mongojs.ObjectId;
+
   module.exports = exports;
 
 })();
