@@ -56,7 +56,7 @@
           console.log('createEvent: Failed to set title ' + err);
         });
 
-        var replyUrl = 'http://75da5c88.ngrok.com/api/v0/event/' + 
+        var replyUrl = 'http://whosd.herokuapp.com/api/v0/event/' + 
                         newEvent.eventId + '/reply'
 
         return RSVP.hash({
