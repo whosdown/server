@@ -128,13 +128,12 @@
         message    : db.messages.create(req.body.message, req.params.eventId)
       })
     .then(function (results) {
-          console.log(results.event)
         resp.success(res, results.message);
         var messageToRecips = results.user.name + ' : ' + req.body.message;
         return _.map(results.recipients, function (recip) {
           return msg.createMessage(recip.phone, 
                                    messageToRecips, 
-                                  results.event.phone);
+                                   results.event.phone);
         })
       })
     .then(msg.sendMessages)

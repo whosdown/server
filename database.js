@@ -82,7 +82,7 @@
 
   var getEvents = function (eventId) {
     return new RSVP.Promise(function (res, rej) {
-      db.events.find({ _id : mongojs.ObjectId(eventId) }, p(res, rej));
+      db.events.find({ _id : mongojs.ObjectId(eventId) }, p(res, rej, true));
     }); 
   }
 
