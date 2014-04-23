@@ -6,9 +6,10 @@
   _.str         = require('underscore.string');
   _.mixin(_.str.exports());
 
-  var p = function (resolve, reject, index) {
+  var p = function (resolve, reject, index, shouldBeNonEmpty) {
     return function (err, docs) {
-      if (err) {
+      var nonEmptyCheck = shouldBeNonEmpty ? !docs[0] : false;
+      if (err || !docs || nonEmptyCheck) {
         reject(err);
       } else {
         resolve(index ? docs[0] : docs);
@@ -79,7 +80,13 @@
 
   /********************* Events *****************************/
 
-  var getEvents = function (creatorId) {
+  var getEvents = function (eventId) {
+    return new RSVP.Promise(function (res, rej) {
+      db.events.find({ _id : mongojs.ObjectId(eventId) }, p(res, rej));
+    }); 
+  }
+
+  var getEventsWithCreatorId = function (creatorId) {
     var findEventsPromise = new RSVP.Promise(function (res, rej) {
       db.events.find({ creator : creatorId }).sort({ expirDate : -1 }, p(res, rej))
     })
@@ -92,13 +99,9 @@
 
     return findEventsPromise
     .then(function (events) {
-        var eventIds = _.map(events, function (event) {
-          return event._id;
-        });
-
         return RSVP.hash({
           events : events,
-          recips : findRecipsPromise(eventIds)
+          recips : findRecipsPromise( _.pluck(events, '_id'))
         });
       })
     .then(function (results) {
@@ -137,7 +140,8 @@
     return addEventsPromise()
     .then(function (newEvent) {
         var recipients = _.map(eventData.recips, function (recipient) {
-          return recipient.event = newEvent._id;
+          recipient.event = newEvent._id;
+          return recipient;
         });
 
         return addRecipientsPromise(recipients)
@@ -163,8 +167,9 @@
   }
 
   exports.events = {
-    create   : createEvent,
-    get      : getEvents,
+    create         : createEvent,
+    get            : getEvents,
+    getWithCreator : getEventsWithCreatorId,
     setTitle : setEventTitle
   };
 
@@ -172,19 +177,24 @@
 
 
   var setMessage = function (message, recipId, eventId) {
-    return db.messages.insert({
-      message   : message,
-      recipient : recipId,
-      event     : mongojs.ObjectId(eventId),
-      date      : new Date()
+    return new RSVP.Promise(function (res, rej) {
+      db.messages.insert({
+        message   : message,
+        recipient : recipId,
+        event     : mongojs.ObjectId(eventId),
+        date      : new Date()
+      }, p(res, rej));
     });
   }
 
-  var getMessages = function (eventId) {
+  var getMessages = function (eventId, recipientId) {
+    var query = { event : mongojs.ObjectId(eventId) };
+    if (recipientId) {
+      query.recipient = recipientId;
+    };
+
     return new RSVP.Promise(function (res, rej) {
-      db.messages.find({
-        event : mongojs.ObjectId(eventId)
-      }).sort({ date : 1 }, p(res, rej));
+      db.messages.find(query).sort({ date : 1 }, p(res, rej));
     });
   }
 
@@ -196,16 +206,31 @@
   /********************* Recipient *****************************/
 
   var getRecipient = function (eventId, recipPhone) {
+    var query = { event : mongojs.ObjectId(eventId) };
+    if (recipPhone) {
+      query.phone = recipPhone;
+    };
+
     return new RSVP.Promise(function (res, rej) {
-      db.recipients.find({
-        event : mongojs.ObjectId(eventId),
-        phone : recipPhone
-      }, p(res, rej, true));
+      db.recipients.find(query, p(res, rej, false, true /* Ensure nonEmpty */));
+    });
+  }
+
+  var setRecipientStatus = function (recipId, status) {
+    var query = { _id : recipId };
+
+    return new RSVP.Promise(function (res, rej) {
+      db.recipients.update(query, {
+        $set : {
+          status : status
+        }
+      }, p(res, rej));
     });
   }
 
   exports.recipients = {
-    get : getRecipient
+    get       : getRecipient,
+    setStatus : setRecipientStatus
   }
 
   module.exports = exports;

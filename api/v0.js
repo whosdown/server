@@ -49,14 +49,14 @@
             return db.events.setTitle(newEvent.eventId, title);
           })
         .then(function (titledEvent) {
-            console.log('Set title to: ' + titledEvent.title + 
+            console.log('createEvent: Set title to: ' + titledEvent.title + 
                         ' for event: ' + req.body.message);
           })
         .catch(function (err) {
-          console.log('Failed to set title' + err);
+          console.log('createEvent: Failed to set title ' + err);
         });
 
-        var replyUrl = 'http://whosd.herokuapp.com/api/v0/event/' + 
+        var replyUrl = 'http://75da5c88.ngrok.com/api/v0/event/' + 
                         newEvent.eventId + '/reply'
 
         return RSVP.hash({
@@ -66,8 +66,6 @@
         });
       })
     .then(function (results) {
-      console.log("results");
-      console.log(results.user);
         var recips = _.map(req.body.people, function (person) {
           return person.name;
         });
@@ -90,9 +88,12 @@
 
         return msg.sendMessages(messagesToRecips);
       })
+    .then(function () {
+        console.log('createEvent: success!');
+      })
     .catch(function (err) {
       resp.error(res, resp.BAD, err);
-      console.log("Error creating event");
+      console.log("createEvent: Error creating event");
       console.log(err);
     });
   };
@@ -109,7 +110,7 @@
       return;
     }
 
-    db.events.get(req.query.userId)
+    db.events.getWithCreator(req.query.userId)
     .then(function (events) {
         resp.success(res, events);
       })
@@ -122,21 +123,76 @@
    *
    */
   var reply = function (req, res) {
-    db.recipients.get(req.params.eventId, req.body.From)
-    .then(function (recip) {
-        return db.messages.create(req.body.Body, recip._id, req.params.eventId);
-      })
-    .then(function (messageDoc) {
-        console.log(messageDoc);
-        resp.success(res, "hmm");
-      })
-    .catch(function (err) {
-        console.log(err);
+    var replyMessage   = req.body.Body
+    ,   replyToPhone   = req.body.To
+    ,   replyFromPhone = req.body.From
+    ,   replyEventId   = req.params.eventId;
+
+    db.recipients.get(replyEventId, replyFromPhone)
+    .then(function (recips) {
+        var recip = _.first(recips);
+
+        // Curry messeages to all other recipients
+        return db.messages.create(replyMessage, recip._id, replyEventId)
+          .then(function (messageDoc) {
+            resp.success(res, "Noted");
+            return recip;
+          });
+      }, function (err) {
+        console.log('reply: Error storing reply: ' + err);
+
         res.format({
           text : function() {
             res.send("{ Who's Down } \nUnfortunately, you are not invited to this event.");
           }
         });
+      })
+    .then(function (replier) {
+        resp.success(res, "Noted");
+
+        // Curry messeages to all other recipients
+        var curryMessagesPromise = 
+        db.recipients.get(replyEventId)
+        .then(function (allRecipients) {
+            var message = replier.name + " : " + replyMessage;
+
+            return _.chain(allRecipients)
+              .filter(function (recip) {
+                return recip.phone !== replier.phone;
+              })
+              .filter(function (recip) {
+                if (!recip.status) {
+                  return true;
+                }
+
+                return recip.status === 0 || recip.status === 1;
+              })
+              .map(function (recip) {
+                return msg.createMessage(recip.phone, message, replyToPhone);
+              })
+              .value();
+          })
+        .then(msg.sendMessages);
+
+        return RSVP.hash({
+          replier         : replier,
+          curriedMessages : curryMessagesPromise,
+          sentiment       : interpreter.getSentiment(replyMessage),
+          messages        : db.messages.get(replyEventId, replier._id)
+        })
+      })
+    .then(function (results) {
+      console.log('sentiment: ' + results.sentiment);
+
+      if (results.messages.length > 1) {
+        return results.replier;
+      } else {
+        return db.recipients.setStatus(results.replier._id, results.sentiment);
+      }
+    })
+    .catch(function (err) {
+        console.log('reply: Error: ' + err);
+
       })
   }
 
@@ -207,15 +263,20 @@
   //   })
   // }
 
-  var getMessages = function (req, res) {
+  var getEventData = function (req, res) {
     if (!req.params.eventId) {
       resp.error(res, resp.BAD);
       return;
     }
 
-    db.messages.get(req.params.eventId)
-    .then(function (messages) {
-        resp.success(res, messages);
+    return RSVP.hash({
+        messages : db.messages.get(req.params.eventId),
+        people   : db.recipients.get(req.params.eventId)
+      })
+    .then(function (results) {
+        console.log('getEventData: ');
+        console.log(results);
+        resp.success(res, results);
       })
     .catch(function (err) {
         resp.error(res, resp.NOT_FOUND, err);
@@ -228,11 +289,11 @@
   module.exports = {
     events: {
       path: base + '/event',
-      messagePath: base + '/event/:eventId',
+      eventPath: base + '/event/:eventId',
       replyPath: base + '/event/:eventId/reply',
       create: createEvent,
       getAll: getEvents,
-      getMessages: getMessages,
+      getEventData: getEventData,
       reply: reply
     },
     user: {

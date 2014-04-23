@@ -35,13 +35,14 @@
   var sendMessage = function(message) {
     console.log(message);
     return new RSVP.Promise(function (res, rej) {
-      twilio.messages.create(message, p(res, rej));
+      res(message);
+      // twilio.messages.create(message, p(res, rej));
     });
   }
 
-  var sendMessages = function(messages, cb) {
+  var sendMessages = function(messages) {
     return RSVP.all(
-      _.map(_.flatten(messages), function (message) {
+      _(messages).flatten().map(function (message) {
         return sendMessage(message);
       })
     );
