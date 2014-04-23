@@ -25,17 +25,11 @@
   }
 
   var sendMessages = function(messages) {
-<<<<<<< HEAD
-    _.each(_.flatten(messages), function (message) {
-      sendMessage(message);
-    })
-=======
     return RSVP.all(
       _(messages).flatten().map(function (message) {
         return sendMessage(message);
       })
     );
->>>>>>> promises
   }
 
   var officialNumber = "+13475805352";

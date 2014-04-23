@@ -11,12 +11,7 @@
     "sequelize": "~1.7.0-rc3",
     "request": "~2.34.0",
     "underscore.string": "~2.3.3",
-<<<<<<< HEAD
     "rsvp": "~3.0.6"
-=======
-    "q": "~1.0.1",
-    "q-mongodb": "0.0.1"
->>>>>>> promises
   },
   "repository": {
     "type": "git",
