@@ -1,38 +1,35 @@
 (function () {
   var request = require('request')
   ,   maluuba = require('./logins').maluuba
+  ,   tp      = require('./logins').tp
+  ,   RSVP    = require('rsvp')
   ,   _       = require('underscore');
 
-  var options = {
-    url    : maluuba.url,
-    method : 'GET',
-    qs     : {
-      apikey : maluuba.apikey,
-      phrase : 'Anyone want to get coffee tonight?'
-    }
-  };
+  var requestPromise = function (options) {
+    return new RSVP.Promise(function (resolve, reject) {
+      request(options, function (err, resp, body) {
+        if (!err && resp.statusCode == 200) {
+          resolve(JSON.parse(body));
+        } else {
+          console.log('Request failed' + body);
+          reject(err);
+        }
+      });     
+    });
+  }
 
-  var mInterperet = function (phrase, cb) {
-    var options = {
+  var getTitleForMessage = function (message) {
+    var maluubaOptions = {
       url    : maluuba.url,
       method : 'GET',
       qs     : {
         apikey : maluuba.apikey,
-        phrase : phrase
+        phrase : message
       }
     };
-    request(options, function (err, resp, body) {
-      if (!err && resp.statusCode == 200) {
-        var info = JSON.parse(body);
-        cb(info);
-      } else {
-        console.log(body);
-      }
-    });
-  }
 
-  var getTitleForMessage = function (message, callback) {
-    mInterperet(message, function (info) {
+    return requestPromise(maluubaOptions)
+    .then(function (info) {
       var result = info.entities || {};
       var title = '';
       if (result.destination) {
@@ -53,11 +50,64 @@
 
       title = _.rtrim(title, '?');
       title = _.capitalize(title);
-      callback(title);
+      
+      return title;
     });
   }
 
+  var getSentiment = function (message) {
+    var tpOptions = {
+      url    : tp.url,
+      method : 'POST',
+      form   : {
+        text : message
+      }
+    };
+
+    var isPos = function (sent) {
+      return sent === 'pos';
+    }
+
+    var isNeg = function (sent) {
+      return sent === 'neg';
+    }
+
+    var isNeu = function (sent) {
+      return sent === 'neutral';
+    }
+
+    var words = message.split(' ');
+    var containsNot = _.contains(words, 'not');
+
+    var heuristic = {
+      down : function (choice, prob) {
+        if(_.contains(words,'down')) {
+
+        }
+      }
+    }
+
+
+    return requestPromise(tpOptions)
+    .then(function (analysis) {
+      var choice = analysis.label;
+
+      if (isPos(choice)) {
+        return 1;
+      }
+
+      if (isNeu(choice)) {
+        return 0;
+      };
+
+      if (isNeg(choice)) {
+        return -1;
+      };
+    })
+  }
+
   module.exports = {
+    getSentiment       : getSentiment,
     getTitleForMessage : getTitleForMessage
   }
 

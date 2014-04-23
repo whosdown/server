@@ -1,42 +1,41 @@
 (function () {
   var fs      = require('fs')
   ,   t_keys  = require('./logins').twilio
+  ,   RSVP    = require('rsvp')
   ,   _       = require('underscore');
 
+  var p = function (resolve, reject, index) {
+    return function (err, docs) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(index ? docs[index] : docs);
+      }
+    };
+  }
 
   var twilio = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
-  // exports.send_message = function(recip, msg) {
-  //   var message_info = {
-  //     to: recip,
-  //     from: "+13475805352",
-  //     body: msg
-  //   };
-
-    // twilio.messages.create(message_info, function(err, message) {
-    //   if (message) {
-    //     console.log(message.sid);
-    //   } else {
-    //     console.log('message creation failed - ' + err);
-    //   }
-    // });
-  // }
-
   var sendMessage = function(message) {
     console.log(message);
-    twilio.messages.create(message, function(err, message) {
-      if (message) {
-        console.log(message.sid);
-      } else {
-        console.log('message creation failed - ' + err);
-      }
+    return new RSVP.Promise(function (res, rej) {
+      res(message);
+      twilio.messages.create(message, p(res, rej));
     });
   }
 
   var sendMessages = function(messages) {
+<<<<<<< HEAD
     _.each(_.flatten(messages), function (message) {
       sendMessage(message);
     })
+=======
+    return RSVP.all(
+      _(messages).flatten().map(function (message) {
+        return sendMessage(message);
+      })
+    );
+>>>>>>> promises
   }
 
   var officialNumber = "+13475805352";
@@ -48,15 +47,13 @@
     "+17313261704" : testPhone.sid
   };
 
-  var setReplyUrl = function (phone, smsUrl, succ) {
-    twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
-      smsUrl    : smsUrl,
-      smsMethod : 'POST'
-    }, function (err, number) {
-      if (!err) {
-        succ(number);
-      };
-    })
+  var setReplyUrl = function (phone, smsUrl) {
+    return new RSVP.Promise(function (res, rej) {
+      twilio.incomingPhoneNumbers(numberSidMap[phone]).update({
+        smsUrl    : smsUrl,
+        smsMethod : 'POST'
+      }, p(res, rej));
+    });
   }
 
   var createMessage = function (to, body, from) {

@@ -13,6 +13,9 @@
     maluuba : {
       url    : 'http://napi.maluuba.com/v0/interpret',
       apikey : logins.MALUUBA_API_KEY
+    },
+    tp : {
+      url : 'http://text-processing.com/api/sentiment/'
     }
   }
 })();
