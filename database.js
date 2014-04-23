@@ -176,14 +176,18 @@
   /********************* Messages *****************************/
 
 
-  var setMessage = function (message, recipId, eventId) {
+  var setMessage = function (message, eventId, recipId) {
+    var messageDoc = {
+      message   : message,
+      event     : mongojs.ObjectId(eventId),
+      date      : new Date()
+    }
+    if (recipId) {
+      messageDoc.recipient = recipId
+    };
+    
     return new RSVP.Promise(function (res, rej) {
-      db.messages.insert({
-        message   : message,
-        recipient : recipId,
-        event     : mongojs.ObjectId(eventId),
-        date      : new Date()
-      }, p(res, rej));
+      db.messages.insert(messageDoc, p(res, rej));
     });
   }
 
@@ -220,10 +224,14 @@
     var query = { _id : recipId };
 
     return new RSVP.Promise(function (res, rej) {
-      db.recipients.update(query, {
-        $set : {
-          status : status
-        }
+      db.recipients.findAndModify({
+        query  : query,
+        update : {
+          $set : {
+            status : status
+          }
+        },
+        new: true
       }, p(res, rej));
     });
   }

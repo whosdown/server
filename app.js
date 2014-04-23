@@ -20,6 +20,8 @@ app.post(api_v0.events.path, api_v0.events.create);
 app.get(api_v0.events.path,  api_v0.events.getAll);
 app.get(api_v0.events.eventPath,  api_v0.events.getEventData);
 app.post(api_v0.events.replyPath, api_v0.events.reply);
+app.post(api_v0.events.sendPath, api_v0.events.send);
+app.put(api_v0.recipient.path, api_v0.recipient.put);
 
 
 app.post(api_v0.user.path, api_v0.user.post);

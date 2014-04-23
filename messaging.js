@@ -16,27 +16,11 @@
 
   var twilio = require('twilio')(t_keys.account_id, t_keys.auth_token);
 
-  // exports.send_message = function(recip, msg) {
-  //   var message_info = {
-  //     to: recip,
-  //     from: "+13475805352",
-  //     body: msg
-  //   };
-
-    // twilio.messages.create(message_info, function(err, message) {
-    //   if (message) {
-    //     console.log(message.sid);
-    //   } else {
-    //     console.log('message creation failed - ' + err);
-    //   }
-    // });
-  // }
-
   var sendMessage = function(message) {
     console.log(message);
     return new RSVP.Promise(function (res, rej) {
       res(message);
-      // twilio.messages.create(message, p(res, rej));
+      twilio.messages.create(message, p(res, rej));
     });
   }
 

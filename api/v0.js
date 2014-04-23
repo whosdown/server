@@ -119,6 +119,32 @@
       });
   }
 
+  var send = function (req, res) {
+    console.log('send')
+    RSVP.hash({
+        recipients : db.recipients.get(req.params.eventId),
+        event      : db.events.get(req.params.eventId),
+        user       : db.users.get(req.body.userId),
+        message    : db.messages.create(req.body.message, req.params.eventId)
+      })
+    .then(function (results) {
+          console.log(results.event)
+        resp.success(res, results.message);
+        var messageToRecips = results.user.name + ' : ' + req.body.message;
+        return _.map(results.recipients, function (recip) {
+          return msg.createMessage(recip.phone, 
+                                   messageToRecips, 
+                                  results.event.phone);
+        })
+      })
+    .then(msg.sendMessages)
+    .catch(function (err) {
+      resp.error(res, resp.BAD, err);
+      console.log("send: Error sending message");
+      console.log(err);
+    });
+  }
+
   /* POST /event/:eventId/reply
    *
    */
@@ -133,7 +159,7 @@
         var recip = _.first(recips);
 
         // Curry messeages to all other recipients
-        return db.messages.create(replyMessage, recip._id, replyEventId)
+        return db.messages.create(replyMessage, replyEventId, recip._id)
           .then(function (messageDoc) {
             resp.success(res, "Noted");
             return recip;
@@ -184,11 +210,14 @@
     .then(function (results) {
       console.log('sentiment: ' + results.sentiment);
 
-      if (results.messages.length > 1) {
+      if (results.messages.length > 2) {
         return results.replier;
       } else {
         return db.recipients.setStatus(results.replier._id, results.sentiment);
       }
+    })
+    .then(function (replier) {
+      console.log(replier);
     })
     .catch(function (err) {
         console.log('reply: Error: ' + err);
@@ -269,17 +298,32 @@
       return;
     }
 
-    return RSVP.hash({
+    RSVP.hash({
         messages : db.messages.get(req.params.eventId),
         people   : db.recipients.get(req.params.eventId)
       })
     .then(function (results) {
-        console.log('getEventData: ');
-        console.log(results);
         resp.success(res, results);
       })
     .catch(function (err) {
         resp.error(res, resp.NOT_FOUND, err);
+      });
+  }
+
+  var updateRecipient = function (req, res) {
+    if (!req.body._id) {
+      resp.error(res, resp.BAD);
+      return;
+    }
+    
+    db.recipients.setStatus(req.body._id, req.body.status)
+    .then(function (results) {
+        console.log('updateRecipient: ');
+        console.log(results);
+        resp.success(res, results);
+      })
+    .catch(function (err) {
+        resp.error(res, resp.BAD, err);
       });
   }
 
@@ -291,16 +335,22 @@
       path: base + '/event',
       eventPath: base + '/event/:eventId',
       replyPath: base + '/event/:eventId/reply',
+      sendPath: base + '/event/:eventId/send',
       create: createEvent,
       getAll: getEvents,
       getEventData: getEventData,
-      reply: reply
+      reply: reply,
+      send: send
     },
     user: {
       path: base + '/user',
       post: createUser,
       verifyPath: base + '/verify',
       verify: verifyUser
+    },
+    recipient: {
+      path: base + '/recip',
+      put: updateRecipient
     }
   };
 
