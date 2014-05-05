@@ -247,10 +247,10 @@
   var createUser = function (req, res) {
     db.users.create(req.body.user)
     .then(function (user) {
-        resp.success(res, out);
+        resp.success(res, user);
 
-        var verifyUrl = "wd://verify?" + out.code;
-        var verifyMessage = msg.createMessage(out.phone, verifyUrl);
+        var verifyUrl = "wd://verify?" + user.code;
+        var verifyMessage = msg.createMessage(user.phone, verifyUrl);
 
         return msg.sendMessage(verifyMessage);
       })
@@ -275,7 +275,7 @@
     db.users.verify(req.body.userId, req.body.code)
     .then(function (user) {
         if (user && user.isVerified) {
-          resp.success(res, out);
+          resp.success(res, user);
         } else {
           resp.error(res, resp.INTERNAL);
         }
