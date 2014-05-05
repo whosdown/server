@@ -321,6 +321,9 @@
   //   })
   // }
 
+  /* GET /event/:eventId
+   *
+   */
   var getEventData = function (req, res) {
     if (!req.params.eventId) {
       resp.error(res, resp.BAD);
@@ -356,8 +359,38 @@
       });
   }
 
-  var removeEvent = function (argument) {
-    // body...
+  /* DELETE /event/:eventId
+   *
+   */
+  var removeEvent = function (req, res) {
+    if (!req.params.eventId) {
+      resp.error(res, resp.BAD);
+      return;
+    }
+
+    db.events.remove(req.params.eventId)
+    .then(function (event) {
+      resp.success(res, event);
+    })
+    .catch(function (err) {
+      resp.error(res, resp.BAD, err);
+    });
+  }
+
+  /* GET /recip/groups
+   *
+   * @param req.query = {
+              userId : "52f8359d4cace484d3000004"
+            }
+   */
+  var pastGroups = function (req, res) {
+    db.recipients.getWithUser(req.query.userId)
+    .then(function (eventsOfPeople) {
+      resp.success(res, eventsOfPeople);
+    })
+    .catch(function (err) {
+      resp.error(res, resp.BAD, err);
+    });
   }
 
   // setAllTitles();
@@ -368,13 +401,13 @@
       path: base + '/event',
       eventPath: base + '/event/:eventId',
       replyPath: base + '/event/:eventId/reply',
-      sendPath: base + '/event/:eventId/send',
+      sendPath: base + '/event/:eventId/send',      
       create: createEvent,
       getAll: getEvents,
-      getEventData: getEventData,
+      getData: getEventData,
       reply: reply,
       send: send,
-      remove: 
+      remove: removeEvent
     },
     user: {
       path: base + '/user',
@@ -384,6 +417,8 @@
     },
     recipient: {
       path: base + '/recip',
+      groupsPath: base + '/recip/groups',
+      groups: pastGroups,
       put: updateRecipient
     }
   };

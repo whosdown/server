@@ -255,9 +255,35 @@
     });
   }
 
+  var getRecipientsWithCreatorId = function (creatorId) {
+    var findEventsPromise = new RSVP.Promise(function (res, rej) {
+      db.events.find({ 
+        creator : creatorId
+      }).sort({ expirDate : -1 }, utils.p(res, rej))
+    });
+
+    return findEventsPromise
+    .then(function (events) {
+        return RSVP.all(_.map(events, function (event) {
+          var getRecipientPromise = new RSVP.Promise(function (res, rej) {
+            db.recipients.find({ 
+              event : mongojs.ObjectId(eventId) 
+            }, utils.p(res, rej));
+          })
+
+          return RSVP.hash({
+            title   : event.title,
+            message : event.message,
+            people  : getRecipientPromise
+          });
+        }));
+      })
+  }
+
   exports.recipients = {
-    get       : getRecipient,
-    setStatus : setRecipientStatus
+    get            : getRecipient,
+    getWithCreator : getRecipientsWithCreatorId,
+    setStatus      : setRecipientStatus
   }
 
   exports.id = mongojs.ObjectId;
