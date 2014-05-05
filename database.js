@@ -168,7 +168,8 @@
         }, utils.p(res, rej));
     });
 
-
+    return removeMessagesPromise
+    .then(markEventsRemovedPromise);
   }
 
   var setEventTitle = function (eventId, title) {
@@ -186,6 +187,7 @@
   exports.events = {
     create         : createEvent,
     get            : getEvents,
+    remove         : removeEvent,
     getWithCreator : getEventsWithCreatorId,
     setTitle : setEventTitle
   };

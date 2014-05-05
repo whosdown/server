@@ -356,6 +356,10 @@
       });
   }
 
+  var removeEvent = function (argument) {
+    // body...
+  }
+
   // setAllTitles();
   var base = '/api/v0';
 
@@ -369,7 +373,8 @@
       getAll: getEvents,
       getEventData: getEventData,
       reply: reply,
-      send: send
+      send: send,
+      remove: 
     },
     user: {
       path: base + '/user',
