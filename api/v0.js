@@ -38,7 +38,6 @@
     db.events.create({
         userId  : req.body.userId,
         message : req.body.message,
-        title   : undefined,
         recips  : req.body.people,
         phone   : msg.testPhone.number
       })
@@ -119,12 +118,22 @@
       });
   }
 
+
+
+  /*  POST /event/:eventId/send
+   *
+   * @param req.body = {
+              userId  : "52f8359d4cace484d3000004",
+              message : "So down!!"
+            }
+   *
+   */
   var send = function (req, res) {
     console.log('send')
     RSVP.hash({
         recipients : db.recipients.get(req.params.eventId),
         event      : db.events.get(req.params.eventId),
-        user       : db.users.get(req.body.userId),
+        user       : db.users.get(req.body.userId), 
         message    : db.messages.create(req.body.message, req.params.eventId)
       })
     .then(function (results) {
@@ -161,7 +170,18 @@
     ,   replyFromPhone = req.body.From
     ,   replyEventId   = req.params.eventId;
 
-    db.recipients.get(replyEventId, replyFromPhone)
+    db.events.get(replyEventId)
+    .then(function (replyEvent) {
+        return db.recipients.get(replyEventId, replyFromPhone);
+      }, function (err) {
+        console.log('reply: event is dead: ' + err);
+
+        res.format({
+          text : function() {
+            res.send("{ Who's Down } \nUnfortunately, this event no longer exists.");
+          }
+        });
+      })
     .then(function (recips) {
         var recip = _.first(recips);
 
@@ -172,7 +192,7 @@
             return recip;
           });
       }, function (err) {
-        console.log('reply: Error storing reply: ' + err);
+        console.log('reply: recipient not associated with event: ' + err);
 
         res.format({
           text : function() {
@@ -247,10 +267,10 @@
   var createUser = function (req, res) {
     db.users.create(req.body.user)
     .then(function (user) {
-        resp.success(res, out);
+        resp.success(res, user);
 
-        var verifyUrl = "wd://verify?" + out.code;
-        var verifyMessage = msg.createMessage(out.phone, verifyUrl);
+        var verifyUrl = "wd://verify?" + user.code;
+        var verifyMessage = msg.createMessage(user.phone, verifyUrl);
 
         return msg.sendMessage(verifyMessage);
       })
@@ -275,7 +295,7 @@
     db.users.verify(req.body.userId, req.body.code)
     .then(function (user) {
         if (user && user.isVerified) {
-          resp.success(res, out);
+          resp.success(res, user);
         } else {
           resp.error(res, resp.INTERNAL);
         }

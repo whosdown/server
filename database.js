@@ -1,21 +1,12 @@
 (function () {
   var mongojs   = require('mongojs')
-  ,   mongoKeys = require('./logins').mongo
   ,   RSVP      = require('rsvp')
   ,   _         = require('underscore');
   _.str         = require('underscore.string');
   _.mixin(_.str.exports());
 
-  var p = function (resolve, reject, index, shouldBeNonEmpty) {
-    return function (err, docs) {
-      var nonEmptyCheck = shouldBeNonEmpty ? !docs[0] : false;
-      if (err || !docs || nonEmptyCheck) {
-        reject(err);
-      } else {
-        resolve(index ? docs[0] : docs);
-      }
-    };
-  }
+  var mongoKeys = require('./logins').mongo
+  ,   utils     = require('./utils');
 
   var consts = {
     duplicate: 11000
@@ -40,7 +31,7 @@
           update: user,
           upsert: true,
           new: true
-        }, p(res, rej))
+        }, utils.p(res, rej))
     });
 
     return makeUserPromise;
@@ -60,15 +51,15 @@
           } 
         },
         new    : true
-      }, p(res, rej));
+      }, utils.p(res, rej));
     });
-    return checkUserPromise
+    return checkUserPromise;
   }
 
 
   var getUser = function (userId) {
     return new RSVP.Promise(function (res, rej) {
-      db.users.find({ _id : mongojs.ObjectId(userId) }, p(res, rej, true));
+      db.users.find({ _id : mongojs.ObjectId(userId) }, utils.p(res, rej, true));
     });
   }
 
@@ -82,18 +73,24 @@
 
   var getEvents = function (eventId) {
     return new RSVP.Promise(function (res, rej) {
-      db.events.find({ _id : mongojs.ObjectId(eventId) }, p(res, rej, true));
+      db.events.find({ 
+        _id  : mongojs.ObjectId(eventId),
+        dead : { $exists: false }
+      }, utils.p(res, rej, true));
     }); 
   }
 
   var getEventsWithCreatorId = function (creatorId) {
     var findEventsPromise = new RSVP.Promise(function (res, rej) {
-      db.events.find({ creator : creatorId }).sort({ expirDate : -1 }, p(res, rej))
+      db.events.find({ 
+        creator : creatorId,
+        dead    : { $exists: false }
+      }).sort({ expirDate : -1 }, utils.p(res, rej))
     })
 
     var findRecipsPromise = function (eventIds) {
       return new RSVP.Promise(function (res, rej) {
-        db.recipients.find({ event : { $in: eventIds } }, p(res, rej))
+        db.recipients.find({ event : { $in: eventIds } }, utils.p(res, rej))
       });
     }
 
@@ -127,13 +124,13 @@
           title     : eventData.title,
           phone     : eventData.phone,
           expirDate : new Date(new Date().getTime() + TenDaysInMS)
-        }, p(res, rej));
+        }, utils.p(res, rej));
       });
     }
 
     var addRecipientsPromise = function (recipients) {
       return new RSVP.Promise(function (res, rej) {
-        db.recipients.insert(recipients, p(res, rej));
+        db.recipients.insert(recipients, utils.p(res, rej));
       });
     }
 
@@ -154,6 +151,26 @@
       });
   };
 
+  var removeEvent = function (eventId) {
+    var removeMessagesPromise = new RSVP.Promise(function (res, rej) {
+      db.messages.remove({
+        event : eventId
+      }, utils.p(res, rej));
+    });
+
+    var markEventsRemovedPromise = new RSVP.Promise(function (res, rej) {
+      db.events.update({
+          _id : eventId
+        }, {
+          $set : { 
+            dead : true 
+          }
+        }, utils.p(res, rej));
+    });
+
+
+  }
+
   var setEventTitle = function (eventId, title) {
     return new RSVP.Promise(function (res, rej) {
       db.events.update({
@@ -162,7 +179,7 @@
           $set : { 
             title : title 
           }
-        }, p(res, rej));
+        }, utils.p(res, rej));
     });
   }
 
@@ -187,7 +204,7 @@
     };
     
     return new RSVP.Promise(function (res, rej) {
-      db.messages.insert(messageDoc, p(res, rej));
+      db.messages.insert(messageDoc, utils.p(res, rej));
     });
   }
 
@@ -198,7 +215,7 @@
     };
 
     return new RSVP.Promise(function (res, rej) {
-      db.messages.find(query).sort({ date : 1 }, p(res, rej));
+      db.messages.find(query).sort({ date : 1 }, utils.p(res, rej));
     });
   }
 
@@ -216,7 +233,7 @@
     };
 
     return new RSVP.Promise(function (res, rej) {
-      db.recipients.find(query, p(res, rej, false, true /* Ensure nonEmpty */));
+      db.recipients.find(query, utils.p(res, rej, false, true /* Ensure nonEmpty */));
     });
   }
 
@@ -232,7 +249,7 @@
           }
         },
         new: true
-      }, p(res, rej));
+      }, utils.p(res, rej));
     });
   }
 
