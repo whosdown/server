@@ -2,8 +2,8 @@
   var mongojs   = require('mongojs')
   ,   RSVP      = require('rsvp')
   ,   _         = require('underscore')
-  ,   _.str     = require('underscore.string');
-  _.mixin(_.str.exports());
+  ,   _str      = require('underscore.string');
+  _.mixin(_str.exports());
 
   var mongoKeys = require('./logins').mongo
   ,   utils     = require('./utils');
@@ -273,14 +273,13 @@
   }
 
 
-
   module.exports = {
     users      : _users,
     events     : _events,
     messages   : _messages,
     recipients : _recipients,
 
-    id         : mongojs.ObjectId;
+    id         : mongojs.ObjectId
   };
 
 })();

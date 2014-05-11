@@ -1,10 +1,13 @@
 (function () {
-  var resp        = require('../response').resp
+  var RSVP        = require('rsvp')
+  ,   _           = require('underscore');
+
+  var utils       = require('../utils')
+  ,   resp        = require('../response').resp
   ,   msg         = require('../messaging')
   ,   db          = require('../database')
   ,   interpreter = require('../interpreter')
-  ,   RSVP        = require('rsvp')
-  ,   _           = require('underscore');
+
 
   var p = function (resolve, reject, index) {
     return function (err, docs) {
@@ -35,23 +38,25 @@
    *
    */
   var createEvent = function (req, res) {
-    db.events.create({
-        userId  : req.body.userId,
-        message : req.body.message,
-        recips  : req.body.people,
-        phone   : msg.testPhone.number
-      })
-    .then(function (newEvent) {
+    var eventObj = {
+      userId  : req.body.userId,
+      message : req.body.message,
+      recips  : req.body.people,
+      phone   : msg.testPhone.number
+    }
+
+    db.events.create(eventObj)
+      .then(function (newEvent) {
         resp.success(res, newEvent);
         interpreter.getTitleForMessage(req.body.message)
-        .then(function (title) {
+          .then(function (title) {
             return db.events.setTitle(newEvent.eventId, title);
           })
-        .then(function (titledEvent) {
+          .then(function (titledEvent) {
             console.log('createEvent: Set title to: ' + titledEvent.title + 
                         ' for event: ' + req.body.message);
           })
-        .catch(function (err) {
+          .catch(function (err) {
           console.log('createEvent: Failed to set title ' + err);
         });
 
