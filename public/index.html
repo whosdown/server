@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-compatible" content="IE-edge">
+    <title>Who's Down</title>
+
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <link href='http://fonts.googleapis.com/css?family=Josefin+Sans:300,400,600,700,300italic,400italic,600italic,700italic' rel='stylesheet' type='text/css'>
+  </head>
+  <body id='background'>
+    <h1 id='title' class='center'>Who's Down</h1>
+    <!-- underscore templates -->
+
+    <script type="text/template" id="event-template">
+      <ul id="event-list">
+        <% _.each(eventlist, function (ev) { %>
+          <li class="event">
+            <p class="event-id" hidden><%= ev._id %></p>
+            <p class="event-title"><strong><%= ev.title %></strong></p>
+            <p class="event-message"><%= ev.message %></p>
+          </li>
+        <% }) %>
+
+      </ul>
+    </script>
+
+    <script type="text/template" id="message-template">
+      <ul id="message-list">
+        <% _.each(messages, function (message) { %>
+          <li class="message<%= message.recipient ? '' : ' creator'%>">
+            <p><%= message.message %></p>
+          </li>
+        <% }) %>
+        <p> </p><p> </p><p> </p>
+
+        <li><ul id="person-list">
+        <% _.each(people, function (person) { %>
+          <li class="person">
+            <p><%= person.name %> is <%= person.status === 1  ? 'Down' : 
+                                         person.status === -1 ? 'Not Down' : 
+                                                                'Yet to Decide' %></p>
+          </li>
+        <% }) %>
+        <ul></li>
+      </ul>
+        
+    </script>
+
+
+    <!-- load scripts -->
+    <script src="lib/js/require.js" data-main="app/main.js"></script>
+  </body>
+</html>
+

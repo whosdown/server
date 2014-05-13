@@ -1,0 +1,306 @@
+/*
+ * Globals & CSS reset
+ * ---------------------------------------------------------------------------
+ */
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+a:link {
+  color: #084080;
+  text-decoration: none;
+}
+
+  a:link:hover {
+    color: #052850;
+    text-decoration: underline;
+  }
+
+  a:link:visited {
+    color: #021020;
+  }
+
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  line-height: 1;
+  font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+}
+
+input {
+  outline: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+hr {
+  border: none;
+  border-bottom: dotted 1px #aaa;
+}
+
+
+#background {
+  height: 100%;
+  background-color: #81CD8A
+}
+
+#title {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: -3px; 
+  color: white;
+}
+
+#event-list {
+  position: absolute;
+  top: 120px;
+  left: 10%;
+  width: 40%;
+}
+
+#message-list {
+  position: absolute;
+  top: 120px;
+  right: 10%;
+  width: 40%;
+}
+
+#person-list {
+  position: relative;
+  top: 50px;
+}
+
+.person {
+  font-style: italic;
+}
+
+.creator {
+  position: relative;
+  left: 10%;
+}
+
+.center {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  margin-left: -100px;
+}
+
+h1 {
+  font-size: 4em;
+  margin: .67em 0;
+}
+
+/*
+ * Main styles
+ * ---------------------------------------------------------------------------
+ */
+
+#controls {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100;
+  background: rgba(255, 255, 255, 0.8);
+  border: solid 1px #CCC;
+}
+
+  #controls a {
+    display: block;
+    padding: 0.5em 1em;
+    color: #333;
+  }
+
+  #controls a:hover {
+    background: #AAA;
+    color: #FFF;
+    text-decoration: none;
+  }
+
+  #controls .play:hover {
+    background: ForestGreen;
+  }
+
+  #controls .reset:hover {
+    background: FireBrick;
+  }
+
+  .maps-list {
+    border-top: solid 1px #CCC;
+    border-bottom: solid 1px #CCC;
+  }
+
+    .maps-list p {
+      font-size: 12px;
+      text-transform: uppercase;
+      text-align: center;
+      margin: 0;
+      padding: 1em;
+      background: #EEE;
+    }
+
+#map-builder {
+  display: block;
+}
+
+/*
+ * Swatch styles shared between palette and map.
+ */
+.swatch {
+  width: 25px;
+  height: 25px;
+  display: inline-block;
+  background-size: 100% auto;
+}
+
+  .swatch.grass       { background-image: url('lib/img/terrain/grass.png'); }
+  .swatch.flowers-red { background-image: url('lib/img/terrain/red_flowers.png'); }
+  .swatch.flowers-orange { background-image: url('lib/img/terrain/orange_flowers.png'); }
+  .swatch.flowers-blue { background-image: url('lib/img/terrain/blue_flowers.png'); }
+  .swatch.weed        { background-image: url('lib/img/terrain/weed.png'); }
+  .swatch.weed-4x     { background-image: url('lib/img/terrain/weed_4x.png'); }
+  .swatch.weed-small  { background-image: url('lib/img/terrain/weed_small.png'); }
+  .swatch.weed-2x     { background-image: url('lib/img/terrain/weed_2x.png'); }
+  .swatch.sand-patch  { background-image: url('lib/img/terrain/sand_patch.png'); }
+  .swatch.box         { background-image: url('lib/img/obstructions/box.png'); }
+
+  .swatch.fence-nw    { background-image: url('lib/img/obstructions/fence_1.png'); }
+  .swatch.fence-n     { background-image: url('lib/img/obstructions/fence_2.png'); }
+  .swatch.fence-ne    { background-image: url('lib/img/obstructions/fence_3.png'); }
+  .swatch.fence-w     { background-image: url('lib/img/obstructions/fence_4.png'); }
+  .swatch.field       { background-image: url('lib/img/obstructions/fence_5.png'); }
+  .swatch.fence-e     { background-image: url('lib/img/obstructions/fence_6.png'); }
+  .swatch.fence-sw    { background-image: url('lib/img/obstructions/fence_7.png'); }
+  .swatch.fence-s     { background-image: url('lib/img/obstructions/fence_8.png'); }
+  .swatch.fence-se    { background-image: url('lib/img/obstructions/fence_9.png'); }
+
+  .swatch.mountain-nw { background-image: url('lib/img/obstructions/mountain_1.png'); }
+  .swatch.mountain-n  { background-image: url('lib/img/obstructions/mountain_2.png'); }
+  .swatch.mountain-ne { background-image: url('lib/img/obstructions/mountain_3.png'); }
+  .swatch.mountain-w  { background-image: url('lib/img/obstructions/mountain_4.png'); }
+  .swatch.plateau     { background-image: url('lib/img/obstructions/mountain_5.png'); }
+  .swatch.mountain-e  { background-image: url('lib/img/obstructions/mountain_6.png'); }
+  .swatch.mountain-sw { background-image: url('lib/img/obstructions/mountain_7.png'); }
+  .swatch.mountain-s  { background-image: url('lib/img/obstructions/mountain_8.png'); }
+  .swatch.mountain-se { background-image: url('lib/img/obstructions/mountain_9.png'); }
+  .swatch.cave        { background-image: url('lib/img/obstructions/mountain_entrance.png'); }
+
+  .swatch.rock-1      { background-image: url('lib/img/obstructions/rock_1.png'); }
+  .swatch.rock-2      { background-image: url('lib/img/obstructions/rock_2.png'); }
+  .swatch.sign        { background-image: url('lib/img/obstructions/sign.png'); }
+  .swatch.tree-1      { background-image: url('lib/img/obstructions/tree_1.png'); }
+  .swatch.tree-2      { background-image: url('lib/img/obstructions/tree_2.png'); }
+  .swatch.planter     { background-image: url('lib/img/obstructions/planter.png'); }
+
+  .swatch.water-nw    { background-image: url('lib/img/obstructions/water_1.png'); }
+  .swatch.water-n     { background-image: url('lib/img/obstructions/water_2.png'); }
+  .swatch.water-ne    { background-image: url('lib/img/obstructions/water_3.png'); }
+  .swatch.water-w     { background-image: url('lib/img/obstructions/water_4.png'); }
+  .swatch.water       { background-image: url('lib/img/obstructions/water_5.png'); }
+  .swatch.water-e     { background-image: url('lib/img/obstructions/water_6.png'); }
+  .swatch.water-sw    { background-image: url('lib/img/obstructions/water_7.png'); }
+  .swatch.water-s     { background-image: url('lib/img/obstructions/water_8.png'); }
+  .swatch.water-se    { background-image: url('lib/img/obstructions/water_9.png'); }
+  .swatch.water-nw-inverse { background-image: url('lib/img/obstructions/water_11.png'); }
+  .swatch.water-ne-inverse { background-image: url('lib/img/obstructions/water_10.png'); }
+  .swatch.water-sw-inverse { background-image: url('lib/img/obstructions/water_13.png'); }
+  .swatch.water-se-inverse { background-image: url('lib/img/obstructions/water_12.png'); }
+
+  .swatch.sand        { background-image: url('lib/img/terrain/sand/center.png'); }
+  .swatch.sand-nw     { background-image: url('lib/img/terrain/sand/nw.png'); }
+  .swatch.sand-n      { background-image: url('lib/img/terrain/sand/n.png'); }
+  .swatch.sand-ne     { background-image: url('lib/img/terrain/sand/ne.png'); }
+  .swatch.sand-w      { background-image: url('lib/img/terrain/sand/w.png'); }
+  .swatch.sand-e      { background-image: url('lib/img/terrain/sand/e.png'); }
+  .swatch.sand-sw     { background-image: url('lib/img/terrain/sand/sw.png'); }
+  .swatch.sand-s      { background-image: url('lib/img/terrain/sand/s.png'); }
+  .swatch.sand-se     { background-image: url('lib/img/terrain/sand/se.png'); }
+  .swatch.sand-nw-inverse { background-image: url('lib/img/terrain/sand/nw_inverse.png'); }
+  .swatch.sand-ne-inverse { background-image: url('lib/img/terrain/sand/ne_inverse.png'); }
+  .swatch.sand-sw-inverse { background-image: url('lib/img/terrain/sand/sw_inverse.png'); }
+  .swatch.sand-se-inverse { background-image: url('lib/img/terrain/sand/se_inverse.png'); }
+
+/*
+ * ---------------------------------------------------------------------------
+ */
+.palette {
+  width: 100%;
+  margin-bottom: 1em;
+}
+
+  .palette .swatch {
+    width: 25px;
+    height: 30px;
+    display: inline-block;
+    margin: 5px;
+    border-bottom: solid 5px white;
+    background-size: 100% auto;
+    cursor: pointer;
+  }
+
+  .palette .swatch:hover    { border-color: #aca; }
+  .palette .swatch.selected { border-color: #686; }
+
+/*
+ * ---------------------------------------------------------------------------
+ */
+.canvas {
+  width: 100%;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
+  .canvas .row {
+    width: 100%;
+    margin-bottom: -2px;
+  }
+
+  .canvas .tile {
+    cursor: crosshair;
+    margin-right: -4px;
+  }
+
+  .canvas.playing .tile {
+    cursor: default;
+  }
+
+/*
+ * ---------------------------------------------------------------------------
+ */
+.player {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  background-size: 100% auto;
+}
+
+  .player.facing-right {
+    background-image: url('lib/img/sprites/pikachu_right.png');
+  }
+
+  .player.facing-left {
+    background-image: url('lib/img/sprites/pikachu_left.png');
+  }
+
+  .player.facing-up {
+    background-image: url('lib/img/sprites/pikachu_up.png');
+  }
+
+  .player.facing-down {
+    background-image: url('lib/img/sprites/pikachu_down.png');
+  }
+
+
