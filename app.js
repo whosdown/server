@@ -12,7 +12,7 @@ app.configure(function() {
 });
 
 // Routes
-app.get('/', routes.index);
+app.use(express.static(__dirname + '/public'));
 
 
 // API
