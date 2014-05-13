@@ -8,17 +8,6 @@
   ,   db          = require('../database')
   ,   interpreter = require('../interpreter')
 
-
-  var p = function (resolve, reject, index) {
-    return function (err, docs) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(index ? docs[0] : docs);
-      }
-    };
-  }
-
   /*  POST /event
    *
    * @param req.body = {
